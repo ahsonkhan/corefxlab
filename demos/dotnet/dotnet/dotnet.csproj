@@ -34,7 +34,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;WINDOWS</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;LINUX</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -56,47 +56,21 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Commands.resx</DependentUpon>
-    </Compile>
+    <Compile Include="Commands.cs" />
     <Compile Include="CscAction.cs" />
     <Compile Include="dotnet.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="Log.cs" />
-    <Compile Include="Messages.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Messages.resx</DependentUpon>
-    </Compile>
+    <Compile Include="Messages.cs" />
     <Compile Include="NugetAction.cs" />
     <Compile Include="OtherActions.cs" />
-    <Compile Include="Paths.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Paths.resx</DependentUpon>
-    </Compile>
+    <Compile Include="Paths.cs" />
     <Compile Include="ProjectProperties.cs" />
     <Compile Include="ProjectPropertiesHelpers.cs" />
     <Compile Include="Settings.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Commands.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Commands.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Messages.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Messages.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Paths.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Paths.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">
