@@ -134,6 +134,7 @@ namespace dotnet
         private static void PrintUsage()
         {
             Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.UsageString);
             PrintUsageWindows();
             PrintUsageLinux();
             Console.WriteLine(Messages.AppNameSpacing + Commands.CommandProjectFile + Messages.SingleSpace + Commands.ProjectFileDescription);
@@ -146,12 +147,14 @@ namespace dotnet
         [Conditional("WINDOWS")]
         private static void PrintUsageWindows()
         {
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandAllOptionsUsage);
+            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.CommandsString);
             Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandHelp1 + Messages.SingleSpace + Commands.CommandHelpDescription);
             Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandNew + Messages.SingleSpace + Commands.CommandNewDescription);
             Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandClean + Messages.SingleSpace + Commands.CommandCleanDescription);
             Console.WriteLine(string.Empty);
-            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandAllOptionsUsage);
-            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.OptionsString);
             Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandLog + Messages.SingleSpace + Commands.CommandLogDescription);
             Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandTarget + Messages.SingleSpace + Commands.CommandTargetDescription);
             Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandRecurse + Messages.SingleSpace + Commands.CommandRecurseDescription);
@@ -164,12 +167,14 @@ namespace dotnet
         [Conditional("LINUX")]
         private static void PrintUsageLinux()
         {
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandAllOptionsUsage);
+            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.CommandsString);
             Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandHelp1 + Messages.SingleSpace + Commands.CommandHelpDescription);
             Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandNew + Messages.SingleSpace + Commands.CommandNewDescription);
             Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandClean + Messages.SingleSpace + Commands.CommandCleanDescription);
             Console.WriteLine(string.Empty);
-            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandAllOptionsUsage);
-            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.OptionsString);
             Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandLog + Messages.SingleSpace + Commands.CommandLogDescription);
             Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandTarget + Messages.SingleSpace + Commands.CommandTargetDescription);
             Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandRecurse + Messages.SingleSpace + Commands.CommandRecurseDescription);

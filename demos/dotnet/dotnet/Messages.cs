@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace dotnet
 {
@@ -23,6 +20,9 @@ namespace dotnet
         public const string NugetFailed = "Failed to get nuget or restore packages.";
         public const string ProcessExit = "Process exit code: {0}";
         public const string SingleSpace = " ";
+        public const string UsageString = "Usage:";
+        public const string OptionsString = "Options:";
+        public const string CommandsString = "Commands:";
 
     }
 }

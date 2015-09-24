@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace dotnet
 {
@@ -53,7 +50,7 @@ namespace dotnet
         public const string SourceFileDescription = "- specifices which source files to compile";
 
         public const string WinCommandAllOptionsUsage =
-            "[/ log] [/target:{exe|library}] [/recurse:<wildcard>] [/debug:{full|pdbonly}] [/optimize] [/unsafe] [/platform:{anycpu|anycpu32bitpreferred|x86|x64}] [ProjectFile] [SourceFiles]";
+            "[/log] [/target:{exe|library}] [/recurse:<wildcard>] [/debug:{full|pdbonly}] [/optimize] [/unsafe] [/platform:{anycpu|anycpu32bitpreferred|x86|x64}] [ProjectFile] [SourceFiles]";
 
         public const string WinCommandClean = "/clean";
         public const string WinCommandDebug = "/debug";
