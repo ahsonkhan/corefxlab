@@ -28,7 +28,7 @@ namespace dotnet
 
             if (!success || !RestorePackagesAction(properties, log, nugetFile, projectJsonFile))
             {
-                Console.WriteLine("Failed to get nuget or restore packages.");
+                Console.WriteLine(Messages.NugetFailed);
                 return false;
             }
             return true;
@@ -131,17 +131,17 @@ namespace dotnet
 
         public static bool RestorePackagesAction(ProjectProperties properties, Log log, string nugetFile, string jsonFile)
         {
-            Console.WriteLine("restoring packages");
+            log.WriteLine("restoring packages");
 
             if (!File.Exists(nugetFile))
             {
-                Console.WriteLine("Could not find file {0}.", nugetFile);
+                Console.WriteLine(Messages.FileNotFound, nugetFile);
                 return false;
             }
 
             if (!File.Exists(jsonFile))
             {
-                Console.WriteLine("Could not find file {0}.", jsonFile);
+                Console.WriteLine(Messages.FileNotFound, jsonFile);
                 return false;
             }
 
@@ -173,7 +173,7 @@ namespace dotnet
                         log.Error(error);
                         process.WaitForExit();
                         var exitCode = process.ExitCode;
-                        if (exitCode != 0) Console.WriteLine("Process exit code: {0}", exitCode);
+                        if (exitCode != 0) Console.WriteLine(Messages.ProcessExit, exitCode);
                     }
                 }
                 catch (Exception e)

@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace dotnet
@@ -13,12 +14,21 @@ namespace dotnet
 
         private static void Main(string[] args)
         {
-            if (Array.Exists(args, element => element == "/new"))
+#if WINDOWS
+            if (Array.Exists(args, element => element == Commands.WinCommandNew))
+#else
+            if (Array.Exists(args, element => element == Commands.LinuxCommandNew))
+#endif
             {
                 OtherActions.CreateNewProject();
                 return;
             }
-            if (Array.Exists(args, element => element == "/clean"))
+
+#if WINDOWS
+            if (Array.Exists(args, element => element == Commands.WinCommandClean))
+#else
+            if (Array.Exists(args, element => element == Commands.LinuxCommandClean))
+#endif
             {
                 OtherActions.Clean(Settings, Log);
                 return;
@@ -41,9 +51,8 @@ namespace dotnet
                 return false;
             }
 
-            Settings.Log = Log.IsEnabled = Array.Exists(args, element => element == "/log");
-            Settings.Optimize = Array.Exists(args, element => element == "/optimize");
-            Settings.Unsafe = Array.Exists(args, element => element == "/unsafe");
+            ParseSwitchesWindows(args);
+            ParseSwitchesLinux(args);
 
             var currentDirectory = Directory.GetCurrentDirectory();
 
@@ -56,20 +65,52 @@ namespace dotnet
                 ? projectFiles.Length == 1 ? projectFiles[0] : ""
                 : specifiedProjectFile.Length == 1 ? specifiedProjectFile[0] : "";
 
-            var specifiedSourceFilenames = Array.FindAll(args, element => element.EndsWith(".cs") && !element.StartsWith("/"));
+#if WINDOWS
+            var specifiedSourceFilenames = Array.FindAll(args, element => element.EndsWith(".cs") && !element.StartsWith(Commands.WinCommandStart));
+#else
+            var specifiedSourceFilenames = Array.FindAll(args, element => element.EndsWith(".cs") && !element.StartsWith(Commands.LinuxCommandStart));
+#endif
+
             foreach (var sourceFilename in specifiedSourceFilenames)
             {
                 Settings.SourceFiles.AddRange(Directory.GetFiles(currentDirectory, sourceFilename));
             }
 
-            return ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith("/target")),
+#if WINDOWS
+            return ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.WinCommandTarget)),
                 Settings.SetTargetSpecification) &&
-                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith("/platform")),
+                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.WinCommandPlatform)),
                        Settings.SetPlatformSpecification) &&
-                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith("/debug")),
+                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.WinCommandDebug)),
                        Settings.SetDebugSpecification) &&
-                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith("/recurse")),
+                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.WinCommandRecurse)),
                        Settings.SetRecurseSpecification);
+#else
+            return ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.LinuxCommandTarget)),
+                Settings.SetTargetSpecification) &&
+                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.LinuxCommandPlatform)),
+                       Settings.SetPlatformSpecification) &&
+                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.LinuxCommandDebug)),
+                       Settings.SetDebugSpecification) &&
+                   ValidateAndSetOptionSpecifications(Array.Find(args, element => element.StartsWith(Commands.LinuxCommandRecurse)),
+                       Settings.SetRecurseSpecification);
+#endif
+        }
+
+        [Conditional("WINDOWS")]
+        private static void ParseSwitchesWindows(string[] args)
+        {
+            Settings.Log = Log.IsEnabled = Array.Exists(args, element => element == Commands.WinCommandLog);
+            Settings.Optimize = Array.Exists(args, element => element == Commands.WinCommandOptimize);
+            Settings.Unsafe = Array.Exists(args, element => element == Commands.WinCommandUnsafe);
+        }
+
+        [Conditional("LINUX")]
+        private static void ParseSwitchesLinux(string[] args)
+        {
+            Settings.Log = Log.IsEnabled = Array.Exists(args, element => element == Commands.LinuxCommandLog);
+            Settings.Optimize = Array.Exists(args, element => element == Commands.LinuxCommandOptimize);
+            Settings.Unsafe = Array.Exists(args, element => element == Commands.LinuxCommandUnsafe);
         }
 
         private static bool ValidateAndSetOptionSpecifications(string option, Func<string, bool> setFunction)
@@ -92,29 +133,50 @@ namespace dotnet
 
         private static void PrintUsage()
         {
-            const string appName = "dotnet.exe";
-            Console.WriteLine("{0} /? or /help        - help", appName);
-            Console.WriteLine("{0} /new               - creates template sources for a new console app", appName);
-            Console.WriteLine("{0} /clean             - deletes tools, packages, and bin project subdirectories",
-                appName);
-            Console.WriteLine(
-                "{0} [/log] [/target:{{exe|library}}] [/recurse:<wildcard>] [/debug:{{full|pdbonly}}] [/optimize] [/unsafe] [/platform:{{anycpu|anycpu32bitpreferred|x86|x64}}] [ProjectFile] [SourceFiles]",
-                appName);
-            Console.WriteLine("           /log        - logs diagnostics info");
-            Console.WriteLine(
-                "           /target     - compiles the sources in the current directory into an exe (default) or dll");
-            Console.WriteLine(
-                "           /recurse    - compiles the sources in the current directory and subdirectories specified by the wildcard");
-            Console.WriteLine("           /debug      - generates debugging information");
-            Console.WriteLine("           /optimize   - enables optimizations performed by the compiler");
-            Console.WriteLine("           /unsafe     - allows compilation of code that uses the unsafe keyword");
-            Console.WriteLine(
-                "           /platform   - specifies which platform this code can run on, default is anycpu");
-            Console.WriteLine(
-                "           ProjectFile - specifies which project file to use, default to the one in the current directory, if only one exists");
-            Console.WriteLine("           SourceFiles - specifices which source files to compile");
-            Console.WriteLine("NOTE #1: uses csc.exe in <project>\\tools subdirectory, or csc.exe on the path.");
-            Console.WriteLine("NOTE #2: dependencies.txt, references.txt can be used to override details.");
+            Console.WriteLine(string.Empty);
+            PrintUsageWindows();
+            PrintUsageLinux();
+            Console.WriteLine(Messages.AppNameSpacing + Commands.CommandProjectFile + Messages.SingleSpace + Commands.ProjectFileDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.CommandSourceFiles + Messages.SingleSpace + Commands.SourceFileDescription);
+            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.CommandNote1);
+            Console.WriteLine(Messages.CommandNote2);
+        }
+
+        [Conditional("WINDOWS")]
+        private static void PrintUsageWindows()
+        {
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandHelp1 + Messages.SingleSpace + Commands.CommandHelpDescription);
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandNew + Messages.SingleSpace + Commands.CommandNewDescription);
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandClean + Messages.SingleSpace + Commands.CommandCleanDescription);
+            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.WinCommandAllOptionsUsage);
+            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandLog + Messages.SingleSpace + Commands.CommandLogDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandTarget + Messages.SingleSpace + Commands.CommandTargetDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandRecurse + Messages.SingleSpace + Commands.CommandRecurseDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandDebug + Messages.SingleSpace + Commands.CommandDebugDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandOptimize + Messages.SingleSpace + Commands.CommandOptimizeDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandUnsafe + Messages.SingleSpace + Commands.CommandUnsafeDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.WinCommandPlatform + Messages.SingleSpace + Commands.CommandPlatformDescription);
+        }
+
+        [Conditional("LINUX")]
+        private static void PrintUsageLinux()
+        {
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandHelp1 + Messages.SingleSpace + Commands.CommandHelpDescription);
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandNew + Messages.SingleSpace + Commands.CommandNewDescription);
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandClean + Messages.SingleSpace + Commands.CommandCleanDescription);
+            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.AppName + Messages.SingleSpace + Commands.LinuxCommandAllOptionsUsage);
+            Console.WriteLine(string.Empty);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandLog + Messages.SingleSpace + Commands.CommandLogDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandTarget + Messages.SingleSpace + Commands.CommandTargetDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandRecurse + Messages.SingleSpace + Commands.CommandRecurseDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandDebug + Messages.SingleSpace + Commands.CommandDebugDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandOptimize + Messages.SingleSpace + Commands.CommandOptimizeDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandUnsafe + Messages.SingleSpace + Commands.CommandUnsafeDescription);
+            Console.WriteLine(Messages.AppNameSpacing + Commands.LinuxCommandPlatform + Messages.SingleSpace + Commands.CommandPlatformDescription);
         }
 
         private static void Build(Settings settings, Log log)
@@ -123,7 +185,7 @@ namespace dotnet
 
             if (properties.Sources.Count == 0)
             {
-                Console.WriteLine("no sources found");
+                Console.WriteLine(Messages.NoSource);
                 return;
             }
 
@@ -153,7 +215,7 @@ namespace dotnet
                 ConvertToCoreConsoleAction(properties);
             }
             OutputRuntimeDependenciesAction(properties);
-            Console.WriteLine("bin\\{0} created", properties.AssemblyNameAndExtension);
+            log.WriteLine(Paths.OutputLocation + "\\{0} created", properties.AssemblyNameAndExtension);
         }
 
         private static void OutputRuntimeDependenciesAction(ProjectProperties properties)

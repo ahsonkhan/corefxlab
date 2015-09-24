@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -18,29 +21,54 @@ namespace dotnet
 
         private static readonly List<string> CommandFunctions = new List<string>
         {
-            "/new",
-            "/clean"
+#if WINDOWS
+            Commands.WinCommandNew,
+            Commands.WinCommandClean
+#else
+            Commands.LinuxCommandNew,
+            Commands.LinuxCommandClean
+#endif
         };
 
         private static readonly List<string> HelpCommands = new List<string>
         {
-            "/?",
-            "/help"
+#if WINDOWS
+            Commands.WinCommandHelp1,
+            Commands.WinCommandHelp2,
+            Commands.WinCommandHelp3
+#else
+            Commands.LinuxCommandHelp1,
+            Commands.LinuxCommandHelp2,
+            Commands.LinuxCommandHelp3
+#endif
         };
 
         private static readonly List<string> CommandSwitches = new List<string>
         {
-            "/log",
-            "/optimize",
-            "/unsafe"
+#if WINDOWS
+            Commands.WinCommandLog,
+            Commands.WinCommandOptimize,
+            Commands.WinCommandUnsafe
+#else
+            Commands.LinuxCommandLog,
+            Commands.LinuxCommandOptimize,
+            Commands.LinuxCommandUnsafe
+#endif
         };
 
         private static readonly List<string> CommandSwitchesWithSpecifications = new List<string>
         {
-            "/target",
-            "/recurse",
-            "/debug",
-            "/platform"
+#if WINDOWS
+            Commands.WinCommandTarget,
+            Commands.WinCommandRecurse,
+            Commands.WinCommandDebug,
+            Commands.WinCommandPlatform
+#else
+            Commands.LinuxCommandTarget,
+            Commands.LinuxCommandRecurse,
+            Commands.LinuxCommandDebug,
+            Commands.LinuxCommandPlatform
+#endif
         };
 
         private static readonly List<string> TargetSpecifications = new List<string>
@@ -113,7 +141,7 @@ namespace dotnet
             foreach (var argument in args)
             {
                 var argOptions = argument.Split(':');
-                var compilerOption = argument.StartsWith("/") ? argOptions[0] : argument;
+                var compilerOption = argument.StartsWith(Commands.WinCommandStart) ? argOptions[0] : argument;
                 if (!CommandFunctions.Contains(compilerOption) && !CommandSwitches.Contains(compilerOption) &&
                     !CommandSwitchesWithSpecifications.Contains(compilerOption) && !FilesExist(compilerOption))
                 {

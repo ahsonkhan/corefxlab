@@ -19,9 +19,9 @@ namespace dotnet
             var buildDll = settings.Target == "library";
 
             properties.ProjectDirectory = Path.Combine(currentDirectory);
-            properties.PackagesDirectory = Path.Combine(properties.ProjectDirectory, "packages");
-            properties.OutputDirectory = Path.Combine(properties.ProjectDirectory, "bin");
-            properties.ToolsDirectory = Path.Combine(properties.ProjectDirectory, "tools");
+            properties.PackagesDirectory = Path.Combine(properties.ProjectDirectory, Paths.Packages);
+            properties.OutputDirectory = Path.Combine(properties.ProjectDirectory, Paths.OutputLocation);
+            properties.ToolsDirectory = Path.Combine(properties.ProjectDirectory, Paths.Tools);
             properties.AssemblyName = Path.GetFileName(properties.ProjectDirectory);
             properties.OutputType = buildDll ? ".dll" : ".exe";
             FindCompiler(properties);
@@ -49,12 +49,11 @@ namespace dotnet
 
             // The anycpu32bitpreferred setting is valid only for executable (.EXE) files
             if (!(settings.Platform == "anycpu32bitpreferred" && buildDll))
-                properties.CscOptions.Add("/platform:" + settings.Platform);
+                properties.CscOptions.Add(Commands.WinCommandPlatform + ":" + settings.Platform);
 
             // Packages
             properties.Packages.Add(@"""Microsoft.NETCore"": ""5.0.0""");
             properties.Packages.Add(@"""System.Console"": ""4.0.0-beta-23123""");
-            //properties.Packages.Add(@"""Microsoft.NETCore.Console"": ""1.0.0-beta-*""");
             properties.Packages.Add(GetConsoleHost(platformOptionSpecicifcation));
             properties.Packages.Add(GetRuntimeCoreClr(platformOptionSpecicifcation));
 
@@ -93,20 +92,20 @@ namespace dotnet
             properties.CscOptions.Add("/noconfig");
             if (settings.Unsafe)
             {
-                properties.CscOptions.Add("/unsafe");
+                properties.CscOptions.Add(Commands.WinCommandUnsafe);
             }
 
             if (settings.Optimize)
             {
-                properties.CscOptions.Add("/optimize");
+                properties.CscOptions.Add(Commands.WinCommandOptimize);
             }
 
             if (!string.IsNullOrWhiteSpace(settings.Debug))
             {
-                properties.CscOptions.Add("/debug:" + settings.Debug);
+                properties.CscOptions.Add(Commands.WinCommandDebug + ":" + settings.Debug);
             }
 
-            properties.CscOptions.Add("/target:" + settings.Target);
+            properties.CscOptions.Add(Commands.WinCommandTarget + ":" + settings.Target);
 
             LogProperties(log, properties, "Initialized Properties Log:", buildDll);
 
@@ -325,7 +324,7 @@ namespace dotnet
                 return;
             }
 
-            properties.CscPath = @"D:\git\roslyn\Binaries\Debug\core-clr\csc.exe";
+            properties.CscPath = Paths.CscPath;
             if (!File.Exists(properties.CscPath))
             {
                 properties.CscPath = "csc.exe";

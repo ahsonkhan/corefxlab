@@ -45,7 +45,7 @@ namespace dotnet
             }
             catch (Exception e)
             {
-                Console.WriteLine("Exception during cleanup: {0}", e.Message);
+                Console.WriteLine(Messages.CleanUpException, e.Message);
             }
         }
     }

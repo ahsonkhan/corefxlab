@@ -13,7 +13,7 @@ namespace dotnet
     {
         public static bool Execute(ProjectProperties properties, Log log)
         {
-            Console.WriteLine("compiling");
+            log.WriteLine(Messages.Compiling);
             var processSettings = new ProcessStartInfo
             {
                 FileName = properties.CscPath,
@@ -34,7 +34,7 @@ namespace dotnet
             }
             catch (Win32Exception)
             {
-                Console.WriteLine("ERROR: csc.exe needs to be on the path.");
+                Console.WriteLine(Messages.CscNotFound);
                 return false;
             }
 
