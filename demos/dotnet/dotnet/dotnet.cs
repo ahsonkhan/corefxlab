@@ -390,7 +390,7 @@ namespace dotnet
             var processSettings = new ProcessStartInfo
             {
                 FileName = Paths.ClangPath,
-                Arguments = " -g -lstdc++ -lrt -Wno-invalid-offsetof " + " " + Paths.ClangInc + " " + Paths.ClangIncGc + " " + Paths.ClangIncGcEnv + " " + Paths.ClanglxstubsPath + " " + Paths.ClangMainPath + " " + Path.Combine(properties.OutputDirectory, "hello.cpp") + " " + Paths.ClanglibSystem + " " + Paths.Clanglibclr + " -o " + "./" + properties.AssemblyName,
+                Arguments = " -g -lstdc++ -lrt -Wno-invalid-offsetof " + " " + Paths.ClangInc + " " + Paths.ClangIncGc + " " + Paths.ClangIncGcEnv + " " + Paths.ClanglxstubsPath + " " + Paths.ClangMainPath + " " + Path.Combine(properties.OutputDirectory, properties.AssemblyName) + ".cpp" + " " + Paths.ClanglibSystem + " " + Paths.Clanglibclr + " -o " + "./" + properties.AssemblyName,
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,

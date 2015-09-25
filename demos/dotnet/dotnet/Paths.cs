@@ -15,7 +15,7 @@ namespace dotnet
         public const string DnuFileName = @"C:\Users\t-ahkh\.dnx\runtimes\dnx-coreclr-win-x86.1.0.0-beta7\bin\dnu.cmd";
         public const string NugetFileName = "nuget.exe";
         public const string IlToCppFilePath = @"C:\Users\t-ahkh\Documents\NativeCompilation\ILToCpp\ILToCPP.exe";
-        public const string ClangPath = @"C:\Program Files\LLVM\bin\clang.exe";
+        public const string ClangPath = "\"C:\\Program Files\\LLVM\\bin\\clang.exe\"";
         public const string ClangInc = @"-IC:\Users\t-ahkh\Documents\NativeCompilation\inc";
         public const string ClangIncGc = @"-IC:\Users\t-ahkh\Documents\NativeCompilation\inc\GC";
         public const string ClangIncGcEnv = @"-IC:\Users\t-ahkh\Documents\NativeCompilation\inc\GC\env";
