@@ -9,5 +9,8 @@ namespace dotnet
         public const string OutputLocation = "bin";
         public const string Packages = "packages";
         public const string Tools = "tools";
+        public const string NugetPath = @"http://dist.nuget.org/win-x86-commandline/v3.1.0-beta/nuget.exe";
+        public const string DnuFileName = "dotnet_dnu";
+        public const string NugetFileName = "nuget.exe";
     }
 }

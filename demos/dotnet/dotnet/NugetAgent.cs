@@ -9,11 +9,11 @@ using System.Text;
 
 namespace dotnet
 {
-    internal static class NugetAction
+    internal static class NugetAgent
     {
         public static bool GetNugetAndRestore(ProjectProperties properties, Log log)
         {
-            var nugetFile = Path.Combine(properties.ToolsDirectory, "nuget.exe");
+            var nugetFile = Path.Combine(properties.ToolsDirectory, Paths.NugetFileName);
             var success = true;
             if (!File.Exists(nugetFile))
             {
@@ -40,8 +40,7 @@ namespace dotnet
             CreateNugetConfig(properties);
 
             var client = new HttpClient();
-            var requestUri = new Uri(@"http://dist.nuget.org/win-x86-commandline/v3.1.0-beta/nuget.exe",
-                UriKind.Absolute);
+            var requestUri = new Uri(Paths.NugetPath, UriKind.Absolute);
 
             var sourceStreamTask = client.GetStreamAsync(requestUri);
             try

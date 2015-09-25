@@ -5,7 +5,7 @@ using System.IO;
 
 namespace dotnet
 {
-    internal static class Helpers
+    internal static class FileSystemHelpers
     {
         internal static void CopyAllFiles(string sourceFolder, string destinationFolder)
         {

@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#define WINDOWS
-//#define LINUX
+//#define WINDOWS
+#define LINUX
 
 using System;
 using System.Diagnostics;
@@ -212,7 +212,7 @@ namespace dotnet
                 Directory.CreateDirectory(properties.PackagesDirectory);
             }
 
-            if (!NugetAction.GetNugetAndRestore(properties, log))
+            if (!NugetAgent.GetNugetAndRestore(properties, log))
             {
                 return;
             }
@@ -230,7 +230,7 @@ namespace dotnet
         {
             foreach (var dependencyFolder in properties.Dependencies)
             {
-                Helpers.CopyAllFiles(dependencyFolder, properties.OutputDirectory);
+                FileSystemHelpers.CopyAllFiles(dependencyFolder, properties.OutputDirectory);
             }
         }
 

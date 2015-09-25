@@ -6,9 +6,9 @@ using System.Collections.Generic;
 
 namespace dotnet
 {
-    internal class Log
+    internal class Log : ILog
     {
-        public bool IsEnabled = false;
+        public bool IsEnabled { get; set; }
 
         public void WriteLine(string format, params object[] args)
         {

@@ -58,11 +58,13 @@
   <ItemGroup>
     <Compile Include="Commands.cs" />
     <Compile Include="CscAction.cs" />
+    <Compile Include="DnuAgent.cs" />
     <Compile Include="dotnet.cs" />
-    <Compile Include="Helpers.cs" />
+    <Compile Include="FileSystemHelpers.cs" />
+    <Compile Include="ILog.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Messages.cs" />
-    <Compile Include="NugetAction.cs" />
+    <Compile Include="NugetAgent.cs" />
     <Compile Include="OtherActions.cs" />
     <Compile Include="Paths.cs" />
     <Compile Include="ProjectProperties.cs" />

@@ -17,15 +17,14 @@ namespace dotnet
             var processSettings = new ProcessStartInfo
             {
                 FileName = properties.CscPath,
-                Arguments = properties.FormatCscArguments()
+                Arguments = properties.FormatCscArguments(),
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false
             };
 
             log.WriteLine("Executing {0}", processSettings.FileName);
             log.WriteLine("Csc Arguments: {0}", processSettings.Arguments);
-
-            processSettings.CreateNoWindow = true;
-            processSettings.RedirectStandardOutput = true;
-            processSettings.UseShellExecute = false;
 
             Process cscProcess;
             try
