@@ -7,6 +7,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 
 namespace dotnet
 {
@@ -211,9 +212,21 @@ namespace dotnet
             {
                 Directory.CreateDirectory(properties.PackagesDirectory);
             }
-
-            if (!NugetAgent.GetNugetAndRestore(properties, log))
+            
+            var projectJsonFile = Path.Combine(properties.ProjectDirectory, "project.json");
+            if (!File.Exists(projectJsonFile))
             {
+                CreateDefaultProjectJson(properties);
+            }
+
+            if (!DnuAgent.GetDnuAndRestore(properties, log))
+            {
+                return;
+            }
+
+            if (!GetDependencies(properties))
+            {
+                Console.WriteLine(Messages.FailedToGetDependencies);
                 return;
             }
 
@@ -228,10 +241,54 @@ namespace dotnet
 
         private static void OutputRuntimeDependenciesAction(ProjectProperties properties)
         {
-            foreach (var dependencyFolder in properties.Dependencies)
+            foreach (var reference in properties.References)
             {
-                FileSystemHelpers.CopyAllFiles(dependencyFolder, properties.OutputDirectory);
+                // properties.References.Add(reference);
+                Console.WriteLine(reference);
             }
+            foreach (var outputAssembly in properties.Dependencies)
+            {
+                //properties.Dependencies.Add(outputAssembly);
+                Console.WriteLine(outputAssembly);
+            }
+            foreach (var file in properties.Dependencies)
+            {
+                FileSystemHelpers.CopyFile(file, properties.OutputDirectory);
+            }
+        }
+
+        private static bool GetDependencies(ProjectProperties properties)
+        {
+            var t = new[] { "DNXCore,Version=v5.0" };
+            var getDependencies = new GetDependencies
+            {
+                ProjectLockFile = Path.Combine(properties.ProjectDirectory, "project.lock.json"),
+                TargetMonikers = t,
+                RuntimeIdentifier = "win7-x64",
+                AllowFallbackOnTargetSelection = true
+            };
+            try
+            {
+                getDependencies.ExecuteCore();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                return false;
+            }
+
+            foreach (var reference in getDependencies.ResolvedReferences)
+            {
+                properties.References.Add(reference);
+                //Console.WriteLine(reference);
+            }
+            foreach (var outputAssembly in getDependencies.ResolvedCopyLocalItems)
+            {
+                properties.Dependencies.Add(outputAssembly);
+                //Console.WriteLine(outputAssembly);
+            }
+            
+            return true;
         }
 
         private static void ConvertToCoreConsoleAction(ProjectProperties properties)
@@ -247,6 +304,43 @@ namespace dotnet
                 ProjectPropertiesHelpers.GetConsoleHostNative(ProjectPropertiesHelpers.GetPlatformOption(Settings.Platform), "win7") +
                 "\\CoreConsole.exe";
             File.Copy(Path.Combine(properties.PackagesDirectory, coreConsolePath), properties.OutputAssemblyPath);
+        }
+
+
+        private static void CreateDefaultProjectJson(ProjectProperties properties)
+        {
+            var fileName = Path.Combine(properties.ProjectDirectory, "project.json");
+            var fs = new FileStream(fileName, FileMode.Create);
+            using (var file = new StreamWriter(fs, Encoding.UTF8))
+            {
+                file.WriteLine(@"{");
+                file.WriteLine(@"    ""dependencies"": {");
+
+                for (var index = 0; index < properties.Packages.Count; index++)
+                {
+                    var package = properties.Packages[index];
+                    file.Write(@"        ");
+                    file.Write(package);
+                    if (index < properties.Packages.Count - 1)
+                    {
+                        file.WriteLine(",");
+                    }
+                    else
+                    {
+                        file.WriteLine();
+                    }
+                }
+                file.WriteLine(@"    },");
+                file.WriteLine(@"    ""frameworks"": {");
+                file.WriteLine(@"        ""dnxcore50"": { }");
+                file.WriteLine(@"    }");
+                file.WriteLine(@"}");
+
+                //"runtimes": {
+                //"win7-x86": { },
+                //"win7-x64": { }
+                //},
+            }
         }
     }
 }

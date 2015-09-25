@@ -11,15 +11,20 @@ namespace dotnet
         {
             foreach (var sourceFilePath in Directory.EnumerateFiles(sourceFolder))
             {
-                var sourceFileName = Path.GetFileName(sourceFilePath);
-                if (sourceFileName == null) continue;
+                CopyFile(sourceFilePath, destinationFolder);
+            }
+        }
+
+        internal static void CopyFile(string file, string destinationFolder)
+        {
+                var sourceFileName = Path.GetFileName(file);
+                if (sourceFileName == null) return;
                 var destinationFilePath = Path.Combine(destinationFolder, sourceFileName);
                 if (File.Exists(destinationFilePath))
                 {
                     File.Delete(destinationFilePath);
                 }
-                File.Copy(sourceFilePath, destinationFilePath);
-            }
+                File.Copy(file, destinationFilePath);
         }
     }
 }

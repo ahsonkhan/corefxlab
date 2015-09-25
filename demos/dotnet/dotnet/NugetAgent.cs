@@ -36,7 +36,6 @@ namespace dotnet
 
         public static bool DownloadNugetAction(ProjectProperties properties, string nugetFile)
         {
-            CreateDefaultProjectJson(properties);
             CreateNugetConfig(properties);
 
             var client = new HttpClient();
@@ -69,42 +68,6 @@ namespace dotnet
             }
 
             return true;
-        }
-
-        private static void CreateDefaultProjectJson(ProjectProperties properties)
-        {
-            var fileName = Path.Combine(properties.ToolsDirectory, "project.json");
-            var fs = new FileStream(fileName, FileMode.Create);
-            using (var file = new StreamWriter(fs, Encoding.UTF8))
-            {
-                file.WriteLine(@"{");
-                file.WriteLine(@"    ""dependencies"": {");
-
-                for (var index = 0; index < properties.Packages.Count; index++)
-                {
-                    var package = properties.Packages[index];
-                    file.Write(@"        ");
-                    file.Write(package);
-                    if (index < properties.Packages.Count - 1)
-                    {
-                        file.WriteLine(",");
-                    }
-                    else
-                    {
-                        file.WriteLine();
-                    }
-                }
-                file.WriteLine(@"    },");
-                file.WriteLine(@"    ""frameworks"": {");
-                file.WriteLine(@"        ""dnxcore50"": { }");
-                file.WriteLine(@"    }");
-                file.WriteLine(@"}");
-
-                //"runtimes": {
-                //"win7-x86": { },
-                //"win7-x64": { }
-                //},
-            }
         }
 
         private static void CreateNugetConfig(ProjectProperties properties)

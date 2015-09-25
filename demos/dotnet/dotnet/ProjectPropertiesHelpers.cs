@@ -58,7 +58,7 @@ namespace dotnet
             properties.Packages.Add(GetRuntimeCoreClr(platformOptionSpecicifcation));
 
             // References
-            properties.References.Add(Path.Combine(properties.PackagesDirectory,
+            /*properties.References.Add(Path.Combine(properties.PackagesDirectory,
                 @"System.Runtime\4.0.20\ref\dotnet\System.Runtime.dll"));
             properties.References.Add(Path.Combine(properties.PackagesDirectory,
                 @"System.Console\4.0.0-beta-23123\ref\dotnet\System.Console.dll"));
@@ -85,7 +85,7 @@ namespace dotnet
             properties.Dependencies.Add(Path.Combine(properties.PackagesDirectory,
                 @"System.Text.Encoding.Extensions\4.0.10\lib\netcore50"));
             properties.Dependencies.Add(Path.Combine(properties.PackagesDirectory,
-                @"System.Runtime.InteropServices\4.0.20\lib\netcore50"));
+                @"System.Runtime.InteropServices\4.0.20\lib\netcore50"));*/
 
             // CSC OPTIONS
             properties.CscOptions.Add("/nostdlib");
