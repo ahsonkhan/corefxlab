@@ -20,6 +20,7 @@ namespace dotnet
                 Arguments = properties.FormatCscArguments(),
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false
             };
 
@@ -39,7 +40,9 @@ namespace dotnet
 
             if (cscProcess == null) return false;
             var output = cscProcess.StandardOutput.ReadToEnd();
+            var error = cscProcess.StandardError.ReadToEnd();
             log.WriteLine(output);
+            log.Error(error);
 
             cscProcess.WaitForExit();
 

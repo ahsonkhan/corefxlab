@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.IO;
 
 namespace dotnet
@@ -17,6 +18,8 @@ namespace dotnet
 
         internal static void CopyFile(string file, string destinationFolder)
         {
+            try
+            {
                 var sourceFileName = Path.GetFileName(file);
                 if (sourceFileName == null) return;
                 var destinationFilePath = Path.Combine(destinationFolder, sourceFileName);
@@ -25,6 +28,11 @@ namespace dotnet
                     File.Delete(destinationFilePath);
                 }
                 File.Copy(file, destinationFilePath);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
     }
 }

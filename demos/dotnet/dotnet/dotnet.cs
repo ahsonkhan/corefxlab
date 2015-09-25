@@ -237,6 +237,10 @@ namespace dotnet
             }
             OutputRuntimeDependenciesAction(properties);
             log.WriteLine(Paths.OutputLocation + "\\{0} created", properties.AssemblyNameAndExtension);
+
+
+            IntermediateLanguagetoCpp(properties, settings, log);
+            CpptoNative(properties, settings, log);
         }
 
         private static void OutputRuntimeDependenciesAction(ProjectProperties properties)
@@ -340,6 +344,81 @@ namespace dotnet
                 //"win7-x86": { },
                 //"win7-x64": { }
                 //},
+            }
+        }
+
+        private static void IntermediateLanguagetoCpp(ProjectProperties properties, Settings settings, Log log)
+        {
+            var processSettings = new ProcessStartInfo
+            {
+                FileName = Paths.IlToCppFilePath,
+                Arguments = Path.Combine(properties.OutputDirectory, properties.AssemblyName) +".dll" + " -r " + 
+                properties.OutputDirectory+ @"\*.dll" + " -r " + Paths.CustomMsCoreLib + " -llvm " + "-out " + Path.Combine(properties.OutputDirectory, properties.AssemblyName) + ".cpp",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            log.WriteLine("Executing {0}", processSettings.FileName);
+            log.WriteLine("Arguments: {0}", processSettings.Arguments);
+
+            using (var process = Process.Start(processSettings))
+            {
+                try
+                {
+                    if (process != null)
+                    {
+                        var output = process.StandardOutput.ReadToEnd();
+                        var error = process.StandardError.ReadToEnd();
+                        log.WriteLine(output);
+                        log.Error(error);
+                        process.WaitForExit();
+                        var exitCode = process.ExitCode;
+                        if (exitCode != 0) Console.WriteLine(Messages.ProcessExit, exitCode);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+        }
+
+        private static void CpptoNative(ProjectProperties properties, Settings settings, Log log)
+        {
+            var processSettings = new ProcessStartInfo
+            {
+                FileName = Paths.ClangPath,
+                Arguments = " -g -lstdc++ -lrt -Wno-invalid-offsetof " + " " + Paths.ClangInc + " " + Paths.ClangIncGc + " " + Paths.ClangIncGcEnv + " " + Paths.ClanglxstubsPath + " " + Paths.ClangMainPath + " " + Path.Combine(properties.OutputDirectory, "hello.cpp") + " " + Paths.ClanglibSystem + " " + Paths.Clanglibclr + " -o " + "./" + properties.AssemblyName,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            log.WriteLine("Executing {0}", processSettings.FileName);
+            log.WriteLine("Arguments: {0}", processSettings.Arguments);
+
+            using (var process = Process.Start(processSettings))
+            {
+                try
+                {
+                    if (process != null)
+                    {
+                        var output = process.StandardOutput.ReadToEnd();
+                        var error = process.StandardError.ReadToEnd();
+                        log.WriteLine(output);
+                        log.Error(error);
+                        process.WaitForExit();
+                        var exitCode = process.ExitCode;
+                        if (exitCode != 0) Console.WriteLine(Messages.ProcessExit, exitCode);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
             }
         }
     }
