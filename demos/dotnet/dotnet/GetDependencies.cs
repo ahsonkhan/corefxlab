@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
@@ -97,7 +98,9 @@ namespace dotnet
         public void ExecuteCore()
         {
             JObject lockFile;
-            using (var streamReader = new StreamReader(ProjectLockFile))
+            //var fs = new FileStream(ProjectLockFile, FileMode.Create);
+            var fs = (Stream)File.OpenRead(ProjectLockFile);
+            using (var streamReader = new StreamReader(fs, Encoding.UTF8))
             {
                 lockFile = JObject.Load(new JsonTextReader(streamReader));
             }
@@ -537,8 +540,9 @@ namespace dotnet
             {
                 return packagesFolder;
             }
-
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+            //return Path.Combine("%userprofile%", ".nuget", "packages");
+            //return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+            return Path.Combine(Environment.GetEnvironmentVariable("userprofile"), ".nuget", "packages");
         }
 
         /// <summary>
