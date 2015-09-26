@@ -53,6 +53,7 @@ namespace dotnet
             FileLocations + @"/sharedlibs/libclrgc.a";
 
         public const string CustomMsCoreLib = FileLocations + @"/mscorlib/mscorlib.dll";
+        public const string CorerunPath = @"/home/ddcloud/Documents/dotnet/dotnet/bin/cscn/coreclr/corerun";
 #endif
 
     }

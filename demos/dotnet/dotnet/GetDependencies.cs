@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+//#define WINDOWS
+#define LINUX
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -540,9 +543,12 @@ namespace dotnet
             {
                 return packagesFolder;
             }
-            //return Path.Combine("%userprofile%", ".nuget", "packages");
-            //return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
-            return Path.Combine(Environment.GetEnvironmentVariable("userprofile"), ".nuget", "packages");
+
+#if WINDOWS
+            return Path.Combine(Environment.GetEnvironmentVariable("userprofile"), ".dnx", "packages");
+#else
+            return Path.Combine("~", ".dnx", "packages");
+#endif
         }
 
         /// <summary>
@@ -562,4 +568,5 @@ namespace dotnet
         }
     }
 }
+
 

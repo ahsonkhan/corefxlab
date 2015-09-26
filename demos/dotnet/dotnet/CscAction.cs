@@ -1,6 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+//#define WINDOWS
+#define LINUX
+
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -16,7 +19,11 @@ namespace dotnet
             log.WriteLine(Messages.Compiling);
             var processSettings = new ProcessStartInfo
             {
+#if WINDOWS
                 FileName = properties.CscPath,
+#else
+                FileName = Paths.CorerunPath,
+#endif
                 Arguments = properties.FormatCscArguments(),
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -99,7 +106,11 @@ namespace dotnet
 
         private static string FormatCscArguments(this ProjectProperties project)
         {
+#if WINDOWS
             return project.FormatCscOptions() + project.FormatReferenceOption() + project.FormatSourcesOption();
+#else
+            return project.CscPath + project.FormatCscOptions() + project.FormatReferenceOption() + project.FormatSourcesOption();
+#endif
         }
     }
 }
