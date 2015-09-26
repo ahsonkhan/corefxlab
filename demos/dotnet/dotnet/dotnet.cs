@@ -268,7 +268,11 @@ namespace dotnet
             {
                 ProjectLockFile = Path.Combine(properties.ProjectDirectory, "project.lock.json"),
                 TargetMonikers = t,
+#if WINDOWS
                 RuntimeIdentifier = "win7-x64",
+#else
+                RuntimeIdentifier = "ubuntu.14.04-x64",
+#endif
                 AllowFallbackOnTargetSelection = true
             };
             try
@@ -334,16 +338,18 @@ namespace dotnet
                         file.WriteLine();
                     }
                 }
+
                 file.WriteLine(@"    },");
                 file.WriteLine(@"    ""frameworks"": {");
                 file.WriteLine(@"        ""dnxcore50"": { }");
+                file.WriteLine(@"    },");
+ 
+                file.WriteLine(@"    ""runtimes"": {");
+                file.WriteLine(@"        ""win7-x86"": { },");
+                file.WriteLine(@"        ""win7-x64"": { },");
+                file.WriteLine(@"        ""ubuntu.14.04-x64"": { }");
                 file.WriteLine(@"    }");
                 file.WriteLine(@"}");
-
-                //"runtimes": {
-                //"win7-x86": { },
-                //"win7-x64": { }
-                //},
             }
         }
 
