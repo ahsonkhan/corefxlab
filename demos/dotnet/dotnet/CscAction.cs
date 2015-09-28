@@ -59,18 +59,9 @@ namespace dotnet
         private static string FormatReferenceOption(this ProjectProperties project)
         {
             var builder = new StringBuilder();
-            builder.Append(" /r:");
-            var first = true;
             foreach (var reference in project.References)
             {
-                if (!first)
-                {
-                    builder.Append(',');
-                }
-                else
-                {
-                    first = false;
-                }
+                builder.Append(" /r:");
                 builder.Append(reference);
             }
             builder.Append(" ");

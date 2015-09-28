@@ -374,7 +374,7 @@ namespace dotnet
             {
                 FileName = Paths.IlToCppFilePath,
                 Arguments = Path.Combine(properties.OutputDirectory, properties.AssemblyName) +".dll" + " -r " + 
-                properties.OutputDirectory+ @"\*.dll" + " -r " + Paths.CustomMsCoreLib + " -llvm " + "-out " + Path.Combine(properties.OutputDirectory, properties.AssemblyName) + ".cpp",
+                properties.OutputDirectory+ @"/*.dll" + " -r " + Paths.CustomMsCoreLib + " -llvm " + "-out " + Path.Combine(properties.OutputDirectory, properties.AssemblyName) + ".cpp",
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
