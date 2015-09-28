@@ -5,6 +5,7 @@ namespace dotnet
     interface ILog
     {
         bool IsEnabled { get; set; }
+        void WriteLine(string text);
         void WriteLine(string format, params object[] args);
         void Write(string format, params object[] args);
         void WriteList(List<string> list, string listName);

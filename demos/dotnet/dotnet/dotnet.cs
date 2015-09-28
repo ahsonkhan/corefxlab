@@ -230,6 +230,21 @@ namespace dotnet
                 return;
             }
 
+#if WINDOWS
+#else
+            for(var i = 0; i <properties.Dependencies.Count; i++)
+            {
+                var temp = properties.Dependencies[i].Replace("\\", "/").Replace("~/.dnx/","");
+                properties.Dependencies[i] = temp;
+            }
+
+            for(var i = 0; i <properties.References.Count; i++)
+            {
+                var temp = properties.References[i].Replace("\\", "/").Replace("~/.dnx/", "");
+                properties.References[i] = temp;
+            }
+#endif
+
             if (!CscAction.Execute(properties, Log)) return;
             if (Settings.Target != "library")
             {
@@ -310,7 +325,7 @@ namespace dotnet
 
             var coreConsolePath =
                 ProjectPropertiesHelpers.GetConsoleHostNative(ProjectPropertiesHelpers.GetPlatformOption(Settings.Platform), "win7") +
-                "\\CoreConsole.exe";
+                "//CoreConsole.exe";
             File.Copy(Path.Combine(properties.PackagesDirectory, coreConsolePath), properties.OutputAssemblyPath);
         }
 

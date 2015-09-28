@@ -71,7 +71,7 @@ namespace dotnet
                 {
                     first = false;
                 }
-                builder.Append(Path.Combine(project.PackagesDirectory, reference));
+                builder.Append(reference);
             }
             builder.Append(" ");
             return builder.ToString();

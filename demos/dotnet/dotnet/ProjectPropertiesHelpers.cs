@@ -142,24 +142,24 @@ namespace dotnet
         public static string GetConsoleHostNative(string platform, string os)
         {
             // platform - x86, x64, arm
-            return "Microsoft.NETCore.ConsoleHost-" + platform.ToLower() + "\\1.0.0-beta-23123\\runtimes\\" +
-                   os.ToLower() + "-" + platform.ToLower() + "\\native";
+            return "Microsoft.NETCore.ConsoleHost-" + platform.ToLower() + "/1.0.0-beta-23123/runtimes/" +
+                   os.ToLower() + "-" + platform.ToLower() + "/native";
         }
 
         public static string GetRuntimeCoreClrDependencyNative(string platform, string os)
         {
             // platform - x86, x64, arm
             // os - win7, win8
-            return "Microsoft.NETCore.Runtime.CoreCLR-" + platform.ToLower() + "\\1.0.0\\runtimes\\" + os.ToLower() +
-                   "-" + platform.ToLower() + "\\native";
+            return "Microsoft.NETCore.Runtime.CoreCLR-" + platform.ToLower() + "/1.0.0/runtimes/" + os.ToLower() +
+                   "-" + platform.ToLower() + "/native";
         }
 
         public static string GetRuntimeCoreClrDependencyLibrary(string platform, string os)
         {
             // platform - x86, x64, arm
             // os - win7, win8
-            return "Microsoft.NETCore.Runtime.CoreCLR-" + platform.ToLower() + "\\1.0.0\\runtimes\\" + os.ToLower() +
-                   "-" + platform.ToLower() + "\\lib\\dotnet";
+            return "Microsoft.NETCore.Runtime.CoreCLR-" + platform.ToLower() + "/1.0.0/runtimes/" + os.ToLower() +
+                   "-" + platform.ToLower() + "/lib/dotnet";
         }
 
         private static void AddToListWithoutDuplicates(ICollection<string> list, List<string> files)
