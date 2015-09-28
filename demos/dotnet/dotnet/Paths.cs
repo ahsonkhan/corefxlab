@@ -38,7 +38,7 @@ namespace dotnet
         public const string FileLocations = @"/home/ddcloud/Documents/dotnet/dotnet/bin/NativeCompilation";
         public const string CscPath = FileLocations + @"/roslyn/rcsc.exe";
         public const string DnuFileName = @"dnu";
-        public const string IlToCppFilePath = FileLocations + @"\ILToCpp\ILToCPP.exe";
+        public const string IlToCppFilePath = FileLocations + @"/ILToCpp/ILToCPP.exe";
         public const string ClangPath = "clang";
         public const string ClangInc = "-I" + FileLocations + @"/inc";
         public const string ClangIncGc = "-I" + FileLocations + @"/inc/C";
