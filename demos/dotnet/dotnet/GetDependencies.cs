@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-//#define WINDOWS
-//#define LINUX
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,10 +17,10 @@ namespace dotnet
         internal const string NuGetPackageVersionMetadata = "NuGetPackageVersion";
         internal const string ReferenceImplementationMetadata = "Implementation";
         internal const string ReferenceImageRuntimeMetadata = "ImageRuntime";
-        internal const string ReferenceWinMDFileMetadata = "WinMDFile";
-        internal const string ReferenceWinMDFileTypeMetadata = "WinMDFileType";
-        internal const string WinMDFileTypeManaged = "Managed";
-        internal const string WinMDFileTypeNative = "Native";
+        internal const string ReferenceWinMdFileMetadata = "WinMDFile";
+        internal const string ReferenceWinMdFileTypeMetadata = "WinMDFileType";
+        internal const string WinMdFileTypeManaged = "Managed";
+        internal const string WinMdFileTypeNative = "Native";
         internal const string NuGetAssetTypeCompile = "compile";
         internal const string NuGetAssetTypeNative = "native";
         internal const string NuGetAssetTypeRuntime = "runtime";
@@ -33,10 +30,6 @@ namespace dotnet
         private readonly List<string> _copyLocalItems = new List<string>();
         private readonly List<string> _references = new List<string>();
         private readonly List<string> _referencedPackages = new List<string>();
-
-        public GetDependencies()
-        {
-        }
 
         public string[] ResolvedAnalyzers
         {
@@ -101,7 +94,6 @@ namespace dotnet
         public void ExecuteCore()
         {
             JObject lockFile;
-            //var fs = new FileStream(ProjectLockFile, FileMode.Create);
             var fs = (Stream)File.OpenRead(ProjectLockFile);
             using (var streamReader = new StreamReader(fs, Encoding.UTF8))
             {
@@ -209,8 +201,6 @@ namespace dotnet
                     _copyLocalItems.Add(resourceItem);
                 }
             }
-
-            SetWinMDMetadata(runtimeWinMDItems, candidateNativeImplementations);
         }
 
         private void GetAnalyzers(JObject lockFile)
@@ -254,63 +244,6 @@ namespace dotnet
                     }
                 }
             }
-        }
-
-        private void SetWinMDMetadata(IEnumerable<string> runtimeWinMDs, ICollection<string> candidateImplementations)
-        {
-            /*foreach (var winMD in runtimeWinMDs.Where(w => _fileExists(w.ItemSpec)))
-            {
-                string imageRuntimeVersion = _tryGetRuntimeVersion(winMD.ItemSpec);
-
-                if (String.IsNullOrEmpty(imageRuntimeVersion))
-                    continue;
-
-                // RAR sets ImageRuntime for everything but the only dependencies we're aware of are 
-                // for WinMDs
-                winMD.SetMetadata(ReferenceImageRuntimeMetadata, imageRuntimeVersion);
-
-                bool isWinMD, isManaged;
-                TryParseRuntimeVersion(imageRuntimeVersion, out isWinMD, out isManaged);
-
-                if (isWinMD)
-                {
-                    winMD.SetMetadata(ReferenceWinMDFileMetadata, "true");
-
-                    if (isManaged)
-                    {
-                        winMD.SetMetadata(ReferenceWinMDFileTypeMetadata, WinMDFileTypeManaged);
-                    }
-                    else
-                    {
-                        winMD.SetMetadata(ReferenceWinMDFileTypeMetadata, WinMDFileTypeNative);
-
-                        // Normally RAR will expect the native DLL to be next to the WinMD, but that doesn't
-                        // work well for nuget packages since compile time assets cannot be architecture specific.
-                        // We also explicitly set all compile time assets to not copy local so we need to 
-                        // make sure that this metadata is set on the runtime asset.
-
-                        // Examine all runtime assets that are native winmds and add Implementation metadata
-                        // We intentionally permit this to cross package boundaries to support cases where
-                        // folks want to split their architecture specific implementations into runtime
-                        // specific packages.
-
-                        // Sample layout            
-                        // lib\netcore50\Contoso.Controls.winmd
-                        // lib\netcore50\Contoso.Controls.xml
-                        // runtimes\win10-arm\native\Contoso.Controls.dll
-                        // runtimes\win10-x64\native\Contoso.Controls.dll
-                        // runtimes\win10-x86\native\Contoso.Controls.dll
-
-                        string fileName = Path.GetFileNameWithoutExtension(winMD.ItemSpec);
-
-                        // determine if we have a Native WinMD that could be satisfied by this native dll.
-                        if (candidateImplementations.Contains(fileName))
-                        {
-                            winMD.SetMetadata(ReferenceImplementationMetadata, fileName + ".dll");
-                        }
-                    }
-                }
-            }*/
         }
 
         private bool TryGetFile(string packageName, string packageVersion, string file, out string path)

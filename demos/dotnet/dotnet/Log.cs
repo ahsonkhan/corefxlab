@@ -42,10 +42,10 @@ namespace dotnet
         public void Error(string format, params object[] args)
         {
             if (!IsEnabled) return;
-            //var old = Console.ForegroundColor;
-            //Console.ForegroundColor = ConsoleColor.Red;
+            var old = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(format, args);
-            //Console.ForegroundColor = old;
+            Console.ForegroundColor = old;
         }
     }
 }
