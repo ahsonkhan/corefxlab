@@ -11,7 +11,7 @@ namespace System.Text.Utf8.Tests
         {
             using (var pool = new NativeBufferPool(256, 10))
             {
-                List<ByteSpan> buffers = new List<ByteSpan>();
+                var buffers = new List<Span<byte>>();
                 for (byte i = 0; i < 10; i++)
                 {
                     var buffer = pool.Rent();
@@ -28,7 +28,7 @@ namespace System.Text.Utf8.Tests
                     {
                         Assert.Equal(i, buffer[bi]);
                     }
-                    pool.Return(ref buffer);
+                    pool.Return(buffer);
                 }
             }
         }

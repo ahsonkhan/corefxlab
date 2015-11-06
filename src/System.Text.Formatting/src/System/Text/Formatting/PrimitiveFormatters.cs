@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Runtime.InteropServices;
-using System.Text.Encodings;
+using System.Text.Utf8;
 
 namespace System.Text.Formatting
 {
@@ -85,26 +85,27 @@ namespace System.Text.Formatting
                 return true;
             }
 
-            var encoded = new Utf8Helpers.FourBytes();
-            bytesWritten = Utf8Helpers.CharToUtf8(value, ref encoded);
-            if(buffer.Length < bytesWritten)
+            // TODO: This can be directly encoded to SpanByte. There is no conversion between spans yet
+            var encoded = new Utf8EncodedCodePoint(value);
+            bytesWritten = encoded.Length;
+            if (buffer.Length < bytesWritten)
             {
                 bytesWritten = 0;
                 return false;
             }
 
-            buffer[0] = encoded.B0;
+            buffer[0] = encoded.Byte0;
             if(bytesWritten > 1)
             {
-                buffer[1] = encoded.B1;
+                buffer[1] = encoded.Byte1;
             }
             if(bytesWritten > 2)
             {
-                buffer[2] = encoded.B2;
+                buffer[2] = encoded.Byte2;
             }
             if(bytesWritten > 3)
             {
-                buffer[3] = encoded.B3;
+                buffer[3] = encoded.Byte3;
             }
             return true;
         }
@@ -134,62 +135,63 @@ namespace System.Text.Formatting
                 return true;
             }
 
-            GCHandle handle;
-            var byteSpan = buffer.Pin(out handle);
-            try {
                 
-                var avaliableBytes = byteSpan.Length;
-                bytesWritten = 0;
-                for (int i = 0; i < value.Length; i++)
-                {
-                    var c = value[i];
+            var avaliableBytes = buffer.Length;
+            bytesWritten = 0;
+            for (int i = 0; i < value.Length; i++)
+            {
+                var c = value[i];
 
-                    var codepoint = (ushort)c;
-                    if (codepoint <= 0x7f) // this if block just optimizes for ascii
+                var codepoint = (ushort)c;
+                if (codepoint <= 0x7f) // this if block just optimizes for ascii
+                {
+                    if (bytesWritten + 1 > avaliableBytes)
                     {
-                        if (bytesWritten + 1 > avaliableBytes)
-                        {
-                            bytesWritten = 0;
-                            return false;
-                        }
-                        byteSpan[bytesWritten++] = (byte)codepoint;
+                        bytesWritten = 0;
+                        return false;
                     }
+                    buffer[bytesWritten++] = (byte)codepoint;
+                }
+                else
+                {
+                    Utf8EncodedCodePoint encoded;
+                    if (!char.IsSurrogate(c))
+                        encoded = new Utf8EncodedCodePoint(c);
                     else
                     {
-                        var encoded = new Utf8Helpers.FourBytes();
-                        var bytes = Utf8Helpers.CharToUtf8(c, ref encoded);
+                        if (++i >= value.Length)
+                            throw new ArgumentException("value", "Invalid surrogate pair.");
+                        char lowSurrogate = value[i];
+                        encoded = new Utf8EncodedCodePoint(c, lowSurrogate);
+                    }
+                            
 
-                        if (bytesWritten + bytes > avaliableBytes)
+                    if (bytesWritten + encoded.Length > avaliableBytes)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+
+                    buffer[bytesWritten] = encoded.Byte0;
+                    if (encoded.Length > 1)
+                    {
+                        buffer[bytesWritten + 1] = encoded.Byte1;
+
+                        if (encoded.Length > 2)
                         {
-                            bytesWritten = 0;
-                            return false;
-                        }
+                            buffer[bytesWritten + 2] = encoded.Byte2;
 
-                        byteSpan[bytesWritten] = encoded.B0;
-                        if (bytes > 1)
-                        {
-                            byteSpan[bytesWritten + 1] = encoded.B1;
-
-                            if (bytes > 2)
+                            if (encoded.Length > 3)
                             {
-                                byteSpan[bytesWritten + 2] = encoded.B2;
-
-                                if (bytes > 3)
-                                {
-                                    byteSpan[bytesWritten + 3] = encoded.B3;
-                                }
+                                buffer[bytesWritten + 3] = encoded.Byte3;
                             }
                         }
-
-                        bytesWritten += bytes;
                     }
+
+                    bytesWritten += encoded.Length;
                 }
-                return true;
             }
-            finally
-            {
-                handle.Free();
-            }
+            return true;
         }
     }
 }

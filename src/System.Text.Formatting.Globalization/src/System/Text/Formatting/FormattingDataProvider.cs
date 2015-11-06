@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Utf8;
 
 namespace System.Text.Formatting
 {
@@ -34,7 +35,7 @@ namespace System.Text.Formatting
 
             byte[] idBytes = new byte[maxIdLength];
             int idByteCount;
-            if (!localeId.TryFormat(idBytes, default(Format.Parsed), FormattingData.InvariantUtf8, out idByteCount))
+            if (!localeId.TryFormat(new Span<byte>(idBytes), default(Format.Parsed), FormattingData.InvariantUtf8, out idByteCount))
             {
                 throw new Exception("bad locale id");
             }
@@ -58,7 +59,7 @@ namespace System.Text.Formatting
 
             if(recordStart == -1)
             {
-                return FormattingData.InvariantUtf16;
+                throw new Exception("local not found");
             }
 
             resourceStream.Position = recordStart;
