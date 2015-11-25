@@ -9,7 +9,7 @@
     <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
     <projectUrl>https://github.com/dotnet/corefxlab</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
-    <description>Non-allocating formatting library</description>
+    <description>libuv .net core wrapper</description>
     <releaseNotes>Initial package</releaseNotes>
     <copyright> Microsoft Corporation.  All rights reserved.</copyright>
     <tags>.NET formatting corefxlab</tags>
