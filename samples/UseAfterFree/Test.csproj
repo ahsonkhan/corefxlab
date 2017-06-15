@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Memory" Version="4.4.0-preview2-25310-01" />
+    <PackageReference Include="System.Memory" Version="4.5.0-preview2-25319-04" />
   </ItemGroup>
 
 </Project>
