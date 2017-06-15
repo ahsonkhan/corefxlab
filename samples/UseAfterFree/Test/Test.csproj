@@ -46,5 +46,8 @@
       <Version>4.5.0-preview2-25319-04</Version>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

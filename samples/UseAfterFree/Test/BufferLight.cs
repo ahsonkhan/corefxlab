@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -102,8 +103,8 @@ public unsafe struct Buffer
     }
     static Buffer()
     {
-        s_marker.AsSpan().Fill(1);
-        //new Random((int)Stopwatch.GetTimestamp()).NextBytes(s_marker);
+        //s_marker.AsSpan().Fill(1);
+        new Random((int)Stopwatch.GetTimestamp()).NextBytes(s_marker);
     }
     #endregion
 }
