@@ -10,7 +10,7 @@ public class Program
         UnmanagedLifetime_Array();
 
         ManagedLifetime_Native();
-        
+
         MamangedLifetime_Array();
 
         ManagedReferenceCountedBuffer();
@@ -23,7 +23,7 @@ public class Program
     {
         var manager = new LifetimeManager(new byte[10]);
         var buffer = manager.SmartBuffer;
-        using(var handle = buffer.Retain())
+        using (var handle = buffer.Retain())
         {
             var span = buffer.Span;
             Console.WriteLine("got span from smart buffer");

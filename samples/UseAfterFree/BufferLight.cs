@@ -51,7 +51,8 @@ public unsafe struct Buffer
     public int Length => _length;
     public Span<byte> Span
     {
-        get {
+        get
+        {
             if (IsManaged && !IsAllocated)
             {
 #if DEBUG
@@ -79,7 +80,8 @@ public unsafe struct Buffer
 
     bool IsAllocated
     {
-        get {
+        get
+        {
             Span<byte> signature;
             if (_array == null)
                 signature = new Span<byte>(_native + OffsetToMarker, MarkerLength);
@@ -143,7 +145,8 @@ public class LifetimeManager : IDisposable
 
     public Buffer Buffer
     {
-        get {
+        get
+        {
             if (_array != null)
             {
                 return new Buffer(_array, 0, _array.Length, true);
@@ -190,7 +193,7 @@ public class LifetimeManager : IDisposable
     {
         Signature.Clear();
         var array = Interlocked.Exchange(ref _array, null);
-    
+
         if (array != null)
         {
             var disposed = ArrayDisposed;
@@ -211,7 +214,8 @@ public class LifetimeManager : IDisposable
 
     private Span<byte> Signature
     {
-        get {
+        get
+        {
             if (_array != null)
             {
                 return new Span<byte>(_array, _array.Length - Buffer.Marker.Length, Buffer.Marker.Length);
@@ -233,4 +237,3 @@ public class LifetimeManager : IDisposable
         if (Interlocked.Decrement(ref _refcount) == 0) Dispose();
     }
 }
-
