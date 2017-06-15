@@ -57,10 +57,10 @@ namespace UseAfterFree
             {
                 if (IsManaged && !IsAllocated)
                 {
-#if DEBUG
+//#if DEBUG
                     throw new ObjectDisposedException("use after free detected");
-#endif
-                    Environment.FailFast("Use after free error detected");
+//#endif
+                    //Environment.FailFast("Use after free error detected");
                 }
 
                 if (_array != null)

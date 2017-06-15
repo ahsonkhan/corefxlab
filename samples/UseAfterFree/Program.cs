@@ -17,6 +17,8 @@ namespace UseAfterFree
 
             UnmanagedLifetime_Array();
 
+            ManagedLifetime_Native_NoDispose();
+
             ManagedLifetime_Native();
 
             MamangedLifetime_Array();
@@ -82,6 +84,38 @@ namespace UseAfterFree
             catch (ObjectDisposedException)
             {
                 Console.WriteLine("Use after free on slice of native memory detected!");
+            }
+        }
+
+        static void ManagedLifetime_Native_NoDispose()
+        {
+            var owned = new LifetimeManager(10);
+            var buffer = owned.Buffer;
+            var slice = buffer.Slice(1);
+
+            var span = buffer.Span;
+            var sliceSpan = slice.Span;
+            Console.WriteLine("Got native spans.");
+
+            GC.Collect(2);
+            GC.WaitForPendingFinalizers();
+
+            try
+            {
+                span = buffer.Span; // this should not fail but it does
+            }
+            catch (ObjectDisposedException)
+            {
+                Console.WriteLine("Why is this failing?");
+            }
+
+            try
+            {
+                span = slice.Span; // this should not fail but it does
+            }
+            catch (ObjectDisposedException)
+            {
+                Console.WriteLine("Why is this failing on Slice?");
             }
         }
 
