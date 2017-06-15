@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -70,25 +71,12 @@ public unsafe struct Buffer
     #region Lifetime Management
     public static ReadOnlySpan<byte> Marker => s_marker;
     const int Unmanaged = -1; // sentinel to indicate lifetime is not managed 
-    const int MarkerLength = 8;
+    const int MarkerLength = 2;
     static readonly byte[] s_marker = new byte[MarkerLength];
-    bool IsManaged
-    {
-        get {
-            if (_array == null)
-            {
-                return _index != Unmanaged;
-            }
-            return _native != null;
-        }
-    }
-    int OffsetToMarker
-    {
-        get {
-            if (_array == null) return _index;
-            else return (int)_native;
-        }
-    }
+    bool IsManaged => (_array == null) ? _index != Unmanaged : _native != null;
+
+    int OffsetToMarker => _array == null ? _index : (int)_native;
+
     bool IsAllocated
     {
         get {
