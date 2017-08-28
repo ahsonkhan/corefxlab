@@ -144,5 +144,10 @@ namespace Microsoft.Net.Http
         internal OwnedBuffer _next;
         int _written;
         byte[] _array;
+
+        protected internal static unsafe void* Add(void* pointer, int offset)
+        {
+            return (byte*)pointer + ((ulong)Unsafe.SizeOf<T>() * (ulong)offset);
+        }
     }
 }
