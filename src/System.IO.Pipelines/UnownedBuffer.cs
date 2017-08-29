@@ -54,7 +54,7 @@ namespace System.IO.Pipelines
             {
                 Retain();
                 var handle = GCHandle.Alloc(_buffer.Array, GCHandleType.Pinned);
-                var pointer = Unsafe.Add<byte>((void*)handle.AddrOfPinnedObject(), _buffer.Offset);
+                void* pointer = Add((void*)handle.AddrOfPinnedObject(), _buffer.Offset);
                 return new BufferHandle(this, pointer, handle);
             }
         }
