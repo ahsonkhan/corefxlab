@@ -41,6 +41,10 @@ namespace System.Buffers.Tests
             var pointingToSameMemory = new Span<byte>(bytes, start, length);
             var structCopy = span;
 
+            Span<string> buffer = new string[128];
+
+            Assert.True(buffer.Length == 128);
+
             SpansReferencingSameMemoryAreEqualInEveryAspect(span, pointingToSameMemory);
             SpansReferencingSameMemoryAreEqualInEveryAspect(span, structCopy);
         }
