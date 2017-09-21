@@ -82,24 +82,35 @@ namespace System.Binary.Tests
 
             var myStruct = new HeterogenousTestStruct
             {
-                I0 = 12345, // 00 00 48 57 => BE => 959447040
-                L1 = 4147483647,
-                I2 = int.MaxValue,
-                L3 = long.MinValue,
-                I4 = int.MinValue,
-                L5 = long.MaxValue
+                I0 = 12345, // 00 00 48 57
+                L1 = 4147483647, // 00 00 00 00 247 53 147 255
+                I2 = int.MaxValue, // 127 255 255 255 
+                L3 = long.MinValue, // 128 00 00 00 00 00 00 00
+                I4 = int.MinValue, // 128 00 00 00
+                L5 = long.MaxValue // 127 255 255 255 255 255 255 255
             };
 
-            Span<byte> spanBE = new byte[Unsafe.SizeOf<HeterogenousTestStruct>()];
+            /*Span<byte> spanBE = new byte[Unsafe.SizeOf<HeterogenousTestStruct>()];
 
             spanBE.WriteBigEndian(myStruct.I0);
             spanBE.Slice(4).WriteBigEndian(myStruct.L1);
             spanBE.Slice(12).WriteBigEndian(myStruct.I2);
             spanBE.Slice(16).WriteBigEndian(myStruct.L3);
             spanBE.Slice(24).WriteBigEndian(myStruct.I4);
-            spanBE.Slice(28).WriteBigEndian(myStruct.L5);
+            spanBE.Slice(28).WriteBigEndian(myStruct.L5);*/
 
-            HeterogenousTestStruct readStruct = spanBE.Read<HeterogenousTestStruct>();
+            Span<byte> spanLE = new byte[Unsafe.SizeOf<HeterogenousTestStruct>()];
+
+            spanLE.WriteLittleEndian(myStruct.I0);
+            spanLE.Slice(4).WriteLittleEndian(myStruct.L1);
+            spanLE.Slice(12).WriteLittleEndian(myStruct.I2);
+            spanLE.Slice(16).WriteLittleEndian(myStruct.L3);
+            spanLE.Slice(24).WriteLittleEndian(myStruct.I4);
+            spanLE.Slice(28).WriteLittleEndian(myStruct.L5);
+
+            //Span<byte> spanBE = new byte[48] { 57, 48, 0, 0, 255, 147, 53, 247, 0, 0, 0, 0, 255, 255, 255, 127, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 128, 255, 255, 255, 255, 255, 255, 255, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+            HeterogenousTestStruct readStruct = spanLE.Read<HeterogenousTestStruct>();
 
             // This does not work!
             if (BitConverter.IsLittleEndian)
@@ -119,6 +130,40 @@ namespace System.Binary.Tests
             Assert.Equal(myStruct.I4, readStruct.I4);
             Assert.Equal(myStruct.L5, readStruct.L5);
         }
+
+
+        [Fact]
+        public void BufferReaderReadExampleStructWILLFAIL()
+        {
+            Assert.True(BitConverter.IsLittleEndian);
+
+            var myStruct = new TestStruct
+            {
+                I0 = 12345, // 00 00 48 57 => BE => 959447040
+                S0 = 53, // 00 53 => BE => 13568
+                S1 = 355 // 01 99 => BE => 25345
+            };
+
+            Span<byte> spanBE = new byte[Unsafe.SizeOf<TestStruct>()];
+            spanBE.WriteBigEndian(myStruct.I0);
+            spanBE.Slice(4).WriteBigEndian(myStruct.S0);
+            spanBE.Slice(6).WriteBigEndian(myStruct.S1);
+
+            var readStruct = spanBE.Read<TestStruct>();
+
+            // This does not work!
+            if (BitConverter.IsLittleEndian)
+            {
+                readStruct.I0 = readStruct.I0.ReverseEndianness();
+                readStruct.S0 = readStruct.S0.ReverseEndianness();
+                readStruct.S1 = readStruct.S1.ReverseEndianness();
+            }
+
+            Assert.Equal(myStruct.I0, readStruct.I0);
+            Assert.Equal(myStruct.S0, readStruct.S0);
+            Assert.Equal(myStruct.S1, readStruct.S1);
+        }
+
 
         [Fact]
         public void BufferReaderReadHeterogeneousStruct()
@@ -179,6 +224,15 @@ namespace System.Binary.Tests
             public int I0;
             public int I1;
             public int I2;
+        }
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TestStruct
+        {
+            public int I0;
+            public short S0;
+            public short S1;
         }
     }
 }

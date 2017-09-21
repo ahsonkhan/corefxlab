@@ -107,31 +107,31 @@ namespace System.Binary
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static int ReverseEndianness(this int num)
+        public static short ReverseEndianness(this short value)
         {
-            uint val = 0;
-            Unsafe.Write(&val, num);
-            val = (val << 24)
-                | ((val & 0xFF00) << 8)
-                | ((val & 0xFF0000) >> 8)
-                | (val >> 24);
-            return Unsafe.Read<int>(&val);
+            return (short)((value & 0x00FF) << 8 | (value & 0xFF00) >> 8);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static long ReverseEndianness(this long num)
+        public static int ReverseEndianness(this int value)
         {
-            ulong val = 0;
-            Unsafe.Write(&val, num);
-            val = (val << 56)
-                | ((val & 0xFF00) << 40)
-                | ((val & 0xFF0000) << 24)
-                | ((val & 0xFF000000) << 8)
-                | ((val & 0xFF00000000) >> 8)
-                | ((val & 0xFF0000000000) >> 24)
-                | ((val & 0xFF000000000000) >> 40)
-                | (val >> 56);
-            return Unsafe.Read<long>(&val);
+            return (value & 0x000000FF) << 24 |
+                (value & 0x0000FF00) << 8 |
+                (value & 0x00FF0000) >> 8 |
+                (int)(((uint)value & 0xFF000000) >> 24);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long ReverseEndianness(this long value)
+        {
+            return (value & 0x00000000000000FFL) << 56 |
+                (value & 0x000000000000FF00L) << 40 |
+                (value & 0x0000000000FF0000L) << 24 |
+                (value & 0x00000000FF000000L) << 8 |
+                (value & 0x000000FF00000000L) >> 8 |
+                (value & 0x0000FF0000000000L) >> 24 |
+                (value & 0x00FF000000000000L) >> 40 |
+                (long)(((ulong)value & 0xFF00000000000000L) >> 56);
         }
     }
 }
