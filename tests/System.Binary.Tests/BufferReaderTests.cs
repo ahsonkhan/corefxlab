@@ -240,11 +240,11 @@ namespace System.Buffers.Tests
             Assert.Equal<long>(2341251616, answerLong);
         }
 
-        private const int TestArrayLength = 1000000;
+        private const int TestArrayLength = 2000;
         private static byte[] myArray = new byte[TestArrayLength * 8];
         volatile static int tempVal;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 1000)]
         private static void MyTestAOld()
         {
             Span<byte> source = GetArray();
@@ -254,16 +254,19 @@ namespace System.Buffers.Tests
                 tempVal = 0;
                 using (iteration.StartMeasurement())
                 {
-                    for (int j = 0; j < TestArrayLength; j++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndianOld();
+                        for (int j = 0; j < TestArrayLength; j++)
+                        {
+                            tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndianOld();
+                        }
                     }
                 }
-                Assert.Equal(tempVal, 1173436863);
+                //Assert.Equal(tempVal, 1173436863);
             }
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 1000)]
         private static void MyTestBNew()
         {
             Span<byte> source = GetArray();
@@ -273,12 +276,15 @@ namespace System.Buffers.Tests
                 tempVal = 0;
                 using (iteration.StartMeasurement())
                 {
-                    for (int j = 0; j < TestArrayLength; j++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndian();
+                        for (int j = 0; j < TestArrayLength; j++)
+                        {
+                            tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndian();
+                        }
                     }
                 }
-                Assert.Equal(tempVal, 1173436863);
+                //Assert.Equal(tempVal, 1173436863);
             }
         }
 
@@ -294,7 +300,7 @@ namespace System.Buffers.Tests
             return source;
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 1000)]
         private static void MyTestBOld()
         {
             Span<byte> source = GetArray();
@@ -304,16 +310,19 @@ namespace System.Buffers.Tests
                 tempVal = 0;
                 using (iteration.StartMeasurement())
                 {
-                    for (int j = 0; j < TestArrayLength; j++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndianOld();
+                        for (int j = 0; j < TestArrayLength; j++)
+                        {
+                            tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndianOld();
+                        }
                     }
                 }
-                Assert.Equal(tempVal, 1173436863);
+                //Assert.Equal(tempVal, 1173436863);
             }
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 1000)]
         private static void MyTestANew()
         {
             Span<byte> source = GetArray();
@@ -323,12 +332,15 @@ namespace System.Buffers.Tests
                 tempVal = 0;
                 using (iteration.StartMeasurement())
                 {
-                    for (int j = 0; j < TestArrayLength; j++)
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                     {
-                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndian();
+                        for (int j = 0; j < TestArrayLength; j++)
+                        {
+                            tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndian();
+                        }
                     }
                 }
-                Assert.Equal(tempVal, 1173436863);
+                //Assert.Equal(tempVal, 1173436863);
             }
         }
 
