@@ -78,7 +78,12 @@ namespace System.Runtime
                 (int)(((uint)value & 0xFF000000) >> 24);
         }
 
-        public static long ReverseEndianness(long value)
+        public static long ReverseEndiannessNew(long value)
+        {
+            return (long)SharedHelper((ulong)value) | (long)(((ulong)value & 0xFF00000000000000L) >> 56);
+        }
+
+        public static long ReverseEndiannessOld(long value)
         {
             return (value & 0x00000000000000FFL) << 56 |
                 (value & 0x000000000000FF00L) << 40 |
@@ -103,7 +108,12 @@ namespace System.Runtime
                 (value & 0xFF000000U) >> 24;
         }
 
-        public static ulong ReverseEndianness(ulong value)
+        public static ulong ReverseEndiannessNew(ulong value)
+        {
+            return SharedHelper(value) | (value & 0xFF00000000000000UL) >> 56;
+        }
+
+        public static ulong ReverseEndiannessOld(ulong value)
         {
             return (value & 0x00000000000000FFUL) << 56 |
                 (value & 0x000000000000FF00UL) << 40 |
@@ -113,6 +123,18 @@ namespace System.Runtime
                 (value & 0x0000FF0000000000UL) >> 24 |
                 (value & 0x00FF000000000000UL) >> 40 |
                 (value & 0xFF00000000000000UL) >> 56;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong SharedHelper(ulong value)
+        {
+            return (value & 0x00000000000000FFUL) << 56 |
+                (value & 0x000000000000FF00UL) << 40 |
+                (value & 0x0000000000FF0000UL) << 24 |
+                (value & 0x00000000FF000000UL) << 8 |
+                (value & 0x000000FF00000000UL) >> 8 |
+                (value & 0x0000FF0000000000UL) >> 24 |
+                (value & 0x00FF000000000000UL) >> 40;
         }
     }
 }

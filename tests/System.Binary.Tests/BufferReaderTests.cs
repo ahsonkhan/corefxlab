@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
+using Microsoft.Xunit.Performance;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -207,6 +208,128 @@ namespace System.Buffers.Tests
             Assert.Equal(myStruct.US1, readStruct.US1);
             Assert.Equal(myStruct.UI1, readStruct.UI1);
             Assert.Equal(myStruct.UL1, readStruct.UL1);
+        }
+
+        [Fact]
+        private static void MyTestNew1()
+        {
+            Span<byte> source = new byte[16];
+
+            source.WriteUInt64BigEndian(12341251616);
+            source.Slice(8).WriteInt64BigEndian(2341251616);
+            ulong answerULong = 0;
+            long answerLong = 0;
+            answerULong = source.ReadUInt64BigEndian();
+            answerLong = source.Slice(8).ReadInt64BigEndian();
+            Assert.Equal<ulong>(12341251616, answerULong);
+            Assert.Equal<long>(2341251616, answerLong);
+        }
+
+        [Fact]
+        private static void MyTestOld2()
+        {
+            Span<byte> source = new byte[16];
+
+            source.WriteUInt64BigEndian(12341251616);
+            source.Slice(8).WriteInt64BigEndian(2341251616);
+            ulong answerULong = 0;
+            long answerLong = 0;
+            answerULong = source.ReadUInt64BigEndianOld();
+            answerLong = source.Slice(8).ReadInt64BigEndianOld();
+            Assert.Equal<ulong>(12341251616, answerULong);
+            Assert.Equal<long>(2341251616, answerLong);
+        }
+
+        private const int TestArrayLength = 1000000;
+        private static byte[] myArray = new byte[TestArrayLength * 8];
+        volatile static int tempVal;
+
+        [Benchmark]
+        private static void MyTestAOld()
+        {
+            Span<byte> source = GetArray();
+            
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                tempVal = 0;
+                using (iteration.StartMeasurement())
+                {
+                    for (int j = 0; j < TestArrayLength; j++)
+                    {
+                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndianOld();
+                    }
+                }
+                Assert.Equal(tempVal, 1173436863);
+            }
+        }
+
+        [Benchmark]
+        private static void MyTestBNew()
+        {
+            Span<byte> source = GetArray();
+            
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                tempVal = 0;
+                using (iteration.StartMeasurement())
+                {
+                    for (int j = 0; j < TestArrayLength; j++)
+                    {
+                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndian();
+                    }
+                }
+                Assert.Equal(tempVal, 1173436863);
+            }
+        }
+
+        private static Span<byte> GetArray()
+        {
+            Span<byte> source = myArray;
+            Random random = new Random(42);
+            for (int i = 0; i < TestArrayLength; i++)
+            {
+                int temp = random.Next();
+                source.Slice(i * 8).WriteInt64BigEndian(temp);
+            }
+            return source;
+        }
+
+        [Benchmark]
+        private static void MyTestBOld()
+        {
+            Span<byte> source = GetArray();
+            
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                tempVal = 0;
+                using (iteration.StartMeasurement())
+                {
+                    for (int j = 0; j < TestArrayLength; j++)
+                    {
+                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndianOld();
+                    }
+                }
+                Assert.Equal(tempVal, 1173436863);
+            }
+        }
+
+        [Benchmark]
+        private static void MyTestANew()
+        {
+            Span<byte> source = GetArray();
+
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                tempVal = 0;
+                using (iteration.StartMeasurement())
+                {
+                    for (int j = 0; j < TestArrayLength; j++)
+                    {
+                        tempVal ^= (int)source.Slice(j * 8).ReadInt64BigEndian();
+                    }
+                }
+                Assert.Equal(tempVal, 1173436863);
+            }
         }
 
         [StructLayout(LayoutKind.Sequential)]

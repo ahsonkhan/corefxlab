@@ -59,11 +59,7 @@ public class PerfHarness
     private static string[] GetTestAssemblies()
     {
         return new [] {
-            "Benchmarks",
-            "System.Binary.Base64.Tests",
-            "System.Text.Primitives.Tests",
-            "System.Text.Json.Tests",
-            "System.IO.Compression.Tests"
+            "System.Binary.Tests"
         };
     }
 }
