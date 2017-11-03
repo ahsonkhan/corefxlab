@@ -138,6 +138,24 @@ namespace System.Text.Http.Parser.Internal
             return sb.ToString();
         }
 
+        public static string GetAsciiStringEscaped(this ReadOnlySpan<byte> span, int maxChars)
+        {
+            var sb = new StringBuilder();
+
+            for (var i = 0; i < Math.Min(span.Length, maxChars); i++)
+            {
+                var ch = span[i];
+                sb.Append(ch < 0x20 || ch >= 0x7F ? $"\\x{ch:X2}" : ((char)ch).ToString());
+            }
+
+            if (span.Length > maxChars)
+            {
+                sb.Append("...");
+            }
+
+            return sb.ToString();
+        }
+
         /// <summary>
         /// Checks that up to 8 bytes from <paramref name="span"/> correspond to a known HTTP method.
         /// </summary>
@@ -151,24 +169,22 @@ namespace System.Text.Http.Parser.Internal
         /// </remarks>
         /// <returns><c>true</c> if the input matches a known string, <c>false</c> otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool GetKnownMethod(this Span<byte> span, out Http.Method method, out int length)
+        public static bool GetKnownMethod(this Span<byte> span, out Http.Method method, out int length)
         {
-            fixed (byte* data = &span.DangerousGetPinnableReference())
-            {
-                method = GetKnownMethod(data, span.Length, out length);
-                return method != Http.Method.Custom;
-            }
+            method = GetKnownMethod(span, out length);
+            return method != Http.Method.Custom;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static Http.Method GetKnownMethod(byte* data, int length, out int methodLength)
+        internal static Http.Method GetKnownMethod(ReadOnlySpan<byte> data, out int methodLength)
         {
+            int length = data.Length;
             methodLength = 0;
             if (length < sizeof(uint))
             {
                 return Http.Method.Custom;
             }
-            else if (*(uint*)data == _httpGetMethodInt)
+            else if (ReadUInt32LittleEndian(data) == _httpGetMethodInt)
             {
                 methodLength = 3;
                 return Http.Method.Get;
@@ -179,7 +195,7 @@ namespace System.Text.Http.Parser.Internal
             }
             else
             {
-                var value = *(ulong*)data;
+                ulong value = ReadUInt64LittleEndian(data);
                 foreach (var x in _knownMethods)
                 {
                     if ((value & x.Item1) == x.Item2)
@@ -221,6 +237,23 @@ namespace System.Text.Http.Parser.Internal
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool GetKnownVersion(this ReadOnlySpan<byte> span, out Http.Version knownVersion, out byte length)
+        {
+            fixed (byte* data = &span.DangerousGetPinnableReference())
+            {
+                knownVersion = GetKnownVersion(data, span.Length);
+                if (knownVersion != Http.Version.Unknown)
+                {
+                    length = sizeof(ulong);
+                    return true;
+                }
+
+                length = 0;
+                return false;
+            }
+        }
+
         /// <summary>
         /// Checks 9 bytes from <paramref name="location"/>  correspond to a known HTTP version.
         /// </summary>
@@ -238,6 +271,29 @@ namespace System.Text.Http.Parser.Internal
             Http.Version knownVersion;
             var version = *(ulong*)location;
             if (length < sizeof(ulong) + 1 || location[sizeof(ulong)] != (byte)'\r')
+            {
+                knownVersion = Http.Version.Unknown;
+            }
+            else if (version == _http11VersionLong)
+            {
+                knownVersion = Http.Version.Http11;
+            }
+            else if (version == _http10VersionLong)
+            {
+                knownVersion = Http.Version.Http10;
+            }
+            else
+            {
+                knownVersion = Http.Version.Unknown;
+            }
+
+            return knownVersion;
+        }
+
+        internal static Http.Version GetKnownVersion(ReadOnlySpan<byte> location)
+        {
+            Http.Version knownVersion;
+            if (!TryReadUInt64LittleEndian(location, out ulong version) || location.Length < sizeof(ulong) + 1 || location[sizeof(ulong)] != (byte)'\r')
             {
                 knownVersion = Http.Version.Unknown;
             }

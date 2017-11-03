@@ -35,6 +35,7 @@ public class HttpParserBench
     [Benchmark(InnerIterationCount = Itterations)]
     static bool RequestLineRb()
     {
+        Console.WriteLine((typeof(Span<string>).AssemblyQualifiedName));
         ReadableBuffer buffer = ReadableBuffer.Create(s_plaintextTechEmpowerRequestBytes);
         var parser = new HttpParser();
         var request = new Request();
