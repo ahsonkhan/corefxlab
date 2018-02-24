@@ -11,15 +11,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\tests\Benchmarks\Benchmarks.csproj" />
-    <ProjectReference Include="..\..\tests\System.Binary.Base64.Tests\System.Binary.Base64.Tests.csproj" />
+    <!-- <ProjectReference Include="..\..\tests\System.Binary.Base64.Tests\System.Binary.Base64.Tests.csproj" />
     <ProjectReference Include="..\..\tests\System.Text.Primitives.Tests\System.Text.Primitives.Tests.csproj" />
     <ProjectReference Include="..\..\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
-    <ProjectReference Include="..\..\tests\System.IO.Compression.Tests\System.IO.Compression.Tests.csproj" />
+    <ProjectReference Include="..\..\tests\System.IO.Compression.Tests\System.IO.Compression.Tests.csproj" /> -->
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit.performance.api" Version="$(XunitPerformanceVersion)" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="1.0.3-alpha-experimental">
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.5">
     <IncludeAssets>All</IncludeAssets>
   </PackageReference>
   </ItemGroup>
