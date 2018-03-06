@@ -104,7 +104,7 @@ static class Program
                 // https://github.com/dotnet/corefx/issues/25536
                 // https://github.com/dotnet/corefx/issues/25539
                 var storagePath = new string(path) + "/" + Path.GetFileName(filepath);
-                Console.WriteLine($"Uploaded {filepath} to {storagePath}");
+
                 // TODO (pri 3): this loop keeps going through all files, even if the key is wrong
                 if (CopyLocalFileToStorageFile(client, filepath, storagePath).Result)
                 {
