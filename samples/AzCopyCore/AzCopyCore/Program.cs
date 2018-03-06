@@ -27,6 +27,7 @@ static class Program
 
     static void Main(string[] args)
     {
+        long before = GC.GetAllocatedBytesForCurrentThread();
         Log.Listeners.Add(new ConsoleTraceListener());
         Log.Switch.Level = SourceLevels.Error;
 
@@ -37,7 +38,11 @@ static class Program
         // transfer from file system to storage
         if (destination.StartsWith("http://"))
         {
+            var sw = new Stopwatch();
+            sw.Start();
             TransferDirectoryToStorage(source, destination, options);
+            sw.Stop();
+            Console.WriteLine("Elapsed time: " + sw.ElapsedMilliseconds + " ms");
         }
 
         // transfer from storage to file system
@@ -47,6 +52,9 @@ static class Program
         }
 
         else { PrintUsage(); }
+
+        long after = GC.GetAllocatedBytesForCurrentThread();
+        Console.WriteLine($"GC Allocations: {after - before} bytes");
 
         if (Debugger.IsAttached)
         {
@@ -120,7 +128,7 @@ static class Program
             string firstLine;
             if ((firstLine = streamReader.ReadLine()) != null)
             {
-                line = firstLine.AsReadOnlySpan();
+                line = firstLine.AsSpan();
             }
             else
             {

@@ -121,7 +121,7 @@ namespace System.Net.Experimental
                 throw new NotImplementedException("could not parse the response");
             }
 
-            reader.AdvanceTo(buffer.GetPosition(buffer.Start, hdConsumed));
+            reader.AdvanceTo(buffer.GetPosition(hdConsumed, buffer.Start));
 
             return handler;
         }
