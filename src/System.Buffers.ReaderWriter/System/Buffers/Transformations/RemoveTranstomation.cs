@@ -1,8 +1,31 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace System.Buffers.Operations
+namespace System.Buffers.Transformations
 {
+    public struct WritableBytes : IWritable
+    {
+        readonly ReadOnlyMemory<byte> _bytes;
+
+        public WritableBytes(ReadOnlyMemory<byte> bytes)
+        {
+            _bytes = bytes;
+        }
+
+        public bool TryWrite(Span<byte> buffer, out int written, StandardFormat format = default)
+        {
+            if (format != default) throw new InvalidOperationException();
+
+            if (!_bytes.Span.TryCopyTo(buffer))
+            {
+                written = 0;
+                return false;
+            }
+            written = _bytes.Length;
+            return true;
+        }
+    }
+
     public class RemoveTransformation : IBufferTransformation
     {
         byte _value;

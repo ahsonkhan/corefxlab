@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System.Buffers.Text;
-
-namespace System.Buffers.Writer
+namespace System.Buffers.Text
 {
     public ref partial struct BufferWriter
     {
@@ -36,28 +34,6 @@ namespace System.Buffers.Writer
 
         public void WriteBytes(ReadOnlyMemory<byte> bytes)
             => WriteBytes(bytes.Span);
-
-        public bool TryWriteBytes(ReadOnlyMemory<byte> bytes, TransformationFormat format)
-        {
-            if (!TryWriteBytes(bytes.Span))
-            {
-                return false;
-            }
-
-            int written = bytes.Length;
-            if (format.TryTransform(Free, ref written))
-            {
-                _written += written;
-                return true;
-            }
-
-            return false;
-        }
-
-        public void WriteBytes(ReadOnlyMemory<byte> bytes, TransformationFormat format)
-        {
-            while (!TryWriteBytes(bytes, format)) Resize();
-        }
 
         #endregion
 

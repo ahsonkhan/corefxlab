@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System.Buffers.Text;
-
-namespace System.Buffers.Writer
+namespace System.Buffers.Text
 {
     public ref partial struct BufferWriter
     {

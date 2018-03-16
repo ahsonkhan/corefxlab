@@ -5,7 +5,6 @@
 using Microsoft.Xunit.Performance;
 using System;
 using System.Buffers;
-using System.Buffers.Reader;
 using System.Buffers.Text;
 using System.Text;
 

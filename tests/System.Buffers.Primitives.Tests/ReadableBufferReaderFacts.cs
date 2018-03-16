@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Buffers.Reader;
 using System.IO.Pipelines.Testing;
 using Xunit;
 
@@ -311,7 +310,7 @@ namespace System.IO.Pipelines.Tests
             for (int i = 0; i < content.Length; i++)
             {
 
-                int copied = BufferReaderExtensions.Peek(reader, buffer);
+                int copied = BufferReader.Peek(reader, buffer);
                 Assert.Equal(content.Length - i, copied);
                 Assert.True(buffer.Slice(0, copied).SequenceEqual(content.AsSpan().Slice(i)));
 
@@ -342,7 +341,7 @@ namespace System.IO.Pipelines.Tests
                 {
                     var bufferSlice = buffer.Slice(0, j);
                     bufferSlice.Clear();
-                    int copied = BufferReaderExtensions.Peek(reader, bufferSlice);
+                    int copied = BufferReader.Peek(reader, bufferSlice);
                     Assert.Equal(Math.Min(bufferSlice.Length, content.Length - i), copied);
 
                     Assert.True(bufferSlice.Slice(0, copied).SequenceEqual(content.AsSpan().Slice(i, j)));
