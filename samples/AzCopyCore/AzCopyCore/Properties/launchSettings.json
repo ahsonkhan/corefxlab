@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "AzCopyCore": {
+      "commandName": "Project",
+      "commandLineArgs": "/Source:\"D:\\DemoSamples\\Demo4\\TestFiles\" /Dest:http://azcopytest.file.core.windows.net/azcopytest5 /@:\"D:\\DemoSamples\\Demo4\\Azure\\AzCopy\\keyfile.txt\""
+    }
+  }
+}
