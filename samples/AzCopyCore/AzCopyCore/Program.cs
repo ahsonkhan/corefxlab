@@ -27,6 +27,7 @@ static class Program
 
     static void Main(string[] args)
     {
+        long before = GC.GetAllocatedBytesForCurrentThread();
         Log.Listeners.Add(new ConsoleTraceListener());
         Log.Switch.Level = SourceLevels.Error;
 

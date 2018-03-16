@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Azure.Authentication;
-using System.Buffers.Writer;
+using System.Buffers.Text;
+//using System.Buffers.Writer;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net.Experimental;
@@ -55,7 +56,8 @@ namespace System.Azure.Storage.Requests
                 AccountName = arguments.Client.AccountName,
                 CanonicalizedResource = arguments.CanonicalizedResource,
                 // TODO (pri 1): this allocation should be eliminated
-                CanonicalizedHeaders = new WritableBytes(headersBuffer.ToArray()),
+                CanonicalizedHeaders = new Buffers.Transformations.WritableBytes(headersBuffer.ToArray()),
+                //CanonicalizedHeaders = new ReadOnlyMemory<byte>(headersBuffer.ToArray()),
                 ContentLength = arguments.ContentLength
             };
             // TODO (pri 3): the default should be defaulted
