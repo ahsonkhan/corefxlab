@@ -5,9 +5,6 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RuntimeFrameworkVersion>2.1.0-preview2-26314-02</RuntimeFrameworkVersion>
     <CoreFxPackageVersion>4.5.0-preview2-26315-04</CoreFxPackageVersion>
-    <!-- <CoreFxLabPackageVersion>0.1.0-preview2-180313-1</CoreFxLabPackageVersion> -->
-    <!-- <CoreFxLabPackageVersion>0.1.0-preview2-180312-2</CoreFxLabPackageVersion> -->
-    <!-- <CoreFxLabPackageVersion>0.1.0-preview2-180309-1</CoreFxLabPackageVersion> -->
   </PropertyGroup>
 
   <PropertyGroup>
@@ -28,11 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- <PackageReference Include="System.Azure.Experimental" Version="$(CoreFxLabPackageVersion)" />
-    <PackageReference Include="System.Buffers.Experimental" Version="$(CoreFxLabPackageVersion)" />
-    <PackageReference Include="System.Text.Http" Version="$(CoreFxLabPackageVersion)" />
-    <PackageReference Include="System.Text.Http.Parser" Version="$(CoreFxLabPackageVersion)" />
-    <PackageReference Include="System.Text.Utf8String" Version="$(CoreFxLabPackageVersion)" /> -->
     <ProjectReference Include="..\..\..\src\System.Azure.Experimental\System.Azure.Experimental.csproj" />
     <ProjectReference Include="..\..\..\src\System.Buffers.Experimental\System.Buffers.Experimental.csproj" />
     <ProjectReference Include="..\..\..\src\System.Text.Http\System.Text.Http.csproj" />
