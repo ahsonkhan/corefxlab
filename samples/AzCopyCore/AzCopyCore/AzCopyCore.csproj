@@ -3,9 +3,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <RuntimeFrameworkVersion>2.1.0-preview2-26209-04</RuntimeFrameworkVersion>
-    <CoreFxPackageVersion>4.5.0-preview2-26213-06</CoreFxPackageVersion>
-    <CoreFxLabPackageVersion>0.1.0-preview2-180213-4</CoreFxLabPackageVersion>
+    <RuntimeFrameworkVersion>2.1.0-preview2-26314-02</RuntimeFrameworkVersion>
+    <CoreFxPackageVersion>4.5.0-preview2-26315-04</CoreFxPackageVersion>
+    <CoreFxLabPackageVersion>0.1.0-preview2-180315-3</CoreFxLabPackageVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,7 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-26223-02" />
+    <!-- <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-26223-02" /> -->
+    <PackageReference Include="System.IO.Pipelines" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Memory" Version="$(CoreFxPackageVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(CoreFxPackageVersion)" />
   </ItemGroup>
@@ -30,7 +31,7 @@
     <PackageReference Include="System.Text.Http" Version="$(CoreFxLabPackageVersion)" />
     <PackageReference Include="System.Text.Http.Parser" Version="$(CoreFxLabPackageVersion)" />
     <PackageReference Include="System.Text.Utf8String" Version="$(CoreFxLabPackageVersion)" />
-    <PackageReference Include="System.IO.Pipelines" Version="$(CoreFxLabPackageVersion)" />
+    
   </ItemGroup>
 
 </Project>

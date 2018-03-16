@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Azure.Authentication;
-using System.Buffers.Text;
-using System.Buffers.Transformations;
+using System.Buffers.Writer;
 using System.IO;
 using System.IO.Pipelines;
 using System.Net.Experimental;

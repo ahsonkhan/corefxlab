@@ -129,7 +129,7 @@ static class Program
             string firstLine;
             if ((firstLine = streamReader.ReadLine()) != null)
             {
-                line = firstLine.AsReadOnlySpan();
+                line = firstLine.AsSpan();
             }
             else
             {
