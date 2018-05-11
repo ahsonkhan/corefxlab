@@ -118,6 +118,26 @@ namespace System.Text.JsonLab.Dynamic.Tests
             Assert.Equal(3, model.Email3);
             Assert.Equal(true, model.RememberMe);
         }
+        
+        [Fact]
+        public void DeserializeStruct()
+        {
+            string str = "{\"IsTest\":false,\"Index\":5}";
+            byte[] data = Encoding.UTF8.GetBytes(str);
+
+            TestStruct model = JsonSerializer.Deserialize<TestStruct>(data);
+
+            Assert.Equal(false, model.IsTest);
+            Assert.Equal(5, model.Index);
+        }
+    }
+
+    [Serializable]
+    public struct TestStruct
+    {
+        public bool IsTest { get; set; }
+
+        public int Index { get; set; }
     }
 
     [Serializable]

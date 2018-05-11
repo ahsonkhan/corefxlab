@@ -159,25 +159,33 @@ namespace System.Text.JsonLab
             private static Func<T> CreateDelegate()
             {
                 var typeInfo = typeof(T).GetTypeInfo();
+                DynamicMethod method = new DynamicMethod("CreateInstanceDynamicMethod", typeof(T), null, restrictedSkipVisibility: true);
+                ILGenerator generator = method.GetILGenerator();
                 if (typeInfo.IsValueType)
                 {
-                    throw new NotImplementedException(); //TODO: Support struct creation
+                    LocalBuilder localBuilder = generator.DeclareLocal(typeof(T));
+                    // Push the address of the local on to the stack, used by Initobj
+                    generator.Emit(OpCodes.Ldloca, localBuilder);
+                    generator.Emit(OpCodes.Initobj, typeof(T));
+                    // Ret expects an instance of the local on the stack
+                    generator.Emit(OpCodes.Ldloc, localBuilder);
+                    generator.Emit(OpCodes.Ret);
                 }
-                DynamicMethod method = new DynamicMethod("CreateInstanceDynamicMethod", typeof(T), null, restrictedSkipVisibility: true);
-
-                // GetConstructors() is only available on netstandard 2.0
-                IEnumerable<ConstructorInfo> ctors = typeInfo.DeclaredConstructors;
-                ConstructorInfo constructor = default;
-                // TODO: Add support for non-default constructors
-                foreach (ConstructorInfo ci in ctors)
+                else
                 {
-                    constructor = ci;
-                    break;
-                }
+                    // GetConstructors() is only available on netstandard 2.0
+                    IEnumerable<ConstructorInfo> ctors = typeInfo.DeclaredConstructors;
+                    ConstructorInfo constructor = default;
+                    // TODO: Add support for non-default constructors
+                    foreach (ConstructorInfo ci in ctors)
+                    {
+                        constructor = ci;
+                        break;
+                    }
 
-                ILGenerator generator = method.GetILGenerator();
-                generator.Emit(OpCodes.Newobj, constructor);
-                generator.Emit(OpCodes.Ret);
+                    generator.Emit(OpCodes.Newobj, constructor);
+                    generator.Emit(OpCodes.Ret);
+                }
                 return (Func<T>)method.CreateDelegate(typeof(Func<T>));
             }
 
