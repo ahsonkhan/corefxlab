@@ -55,14 +55,14 @@ namespace System.Text.JsonLab.Benchmarks
             WriterNewtonsoftBasic(Formatted, _writer);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void WriterSystemTextJsonHelloWorld()
         {
             _arrayFormatter.Clear();
             WriterSystemTextJsonHelloWorld(Formatted, _arrayFormatter);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void WriterNewtonsoftHelloWorld()
         {
             _stream.Seek(0, SeekOrigin.Begin);
