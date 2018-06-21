@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Formatting
 {
-    public class ArrayFormatter : ITextBufferWriter, IDisposable
+    public struct ArrayFormatter : ITextBufferWriter, IDisposable
     {
         ResizableArray<byte> _buffer;
         SymbolTable _symbolTable;
@@ -72,7 +72,7 @@ namespace System.Text.Formatting
                 FormatterThrowHelper.ThrowInvalidOperationException("More bytes commited than returned from FreeBuffer");
             }
         }
-        public int MaxBufferSize { get; } = Int32.MaxValue;
+        //public int MaxBufferSize { get; } = Int32.MaxValue;
 
         public void Dispose()
         {

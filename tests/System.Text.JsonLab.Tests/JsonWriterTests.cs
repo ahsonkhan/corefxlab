@@ -6,6 +6,7 @@ using Xunit;
 using System.Text.Formatting;
 using System.Buffers.Text;
 using System.IO;
+using System.Buffers;
 
 namespace System.Text.JsonLab.Tests
 {
@@ -31,6 +32,85 @@ namespace System.Text.JsonLab.Tests
             formatted = formatter.Formatted;
             str = Encoding.UTF8.GetString(formatted.Array, formatted.Offset, formatted.Count);
             Assert.Equal(expected, str.Replace("\r\n", "").Replace("\n", "").Replace(" ", ""));
+        }
+
+        private static void WriterSystemTextJsonArrayOnlyCompactUtf8(bool formatted, ArrayFormatter output, int[] data)
+        {
+            var json = new JsonWriter(output, true, formatted);
+
+            json.WriteArray("ExtraArray", data);
+        }
+
+        private static void WriterSystemTextJsonHelloWorldCompactUtf8(bool formatted, ArrayFormatter output)
+        {
+            var json = new JsonWriter(output, true, formatted);
+
+            json.WriteObject("message", "Hello, World!");
+        }
+
+        [Fact]
+        public void WriteJsonUtf8HelloWorldCompact()
+        {
+            var formatter = new ArrayFormatter(1024, SymbolTable.InvariantUtf8);
+
+            WriterSystemTextJsonHelloWorldCompactUtf8(false, formatter);
+
+            var formatted = formatter.Formatted;
+            var str = Encoding.UTF8.GetString(formatted.Array, formatted.Offset, formatted.Count);
+            Assert.Equal(GetHelloWorldExpectedString(false, true), str);
+        }
+
+        [Fact]
+        public void WriteJsonUtf8Compact()
+        {
+            var _data = new int[100];
+            Random rand = new Random(42);
+
+            for (int i = 0; i < 100; i++)
+            {
+                _data[i] = rand.Next(-10000, 10000);
+            }
+
+            IBufferWriter<byte> formatter = new ArrayFormatter(1024, SymbolTable.InvariantUtf8);
+
+            //WriterSystemTextJsonArrayOnlyCompactUtf8(false, formatter, _data);
+
+            var json = new JsonWriter(formatter, true, false);
+
+            json.WriteArray("ExtraArray", _data);
+
+
+            var formatted = ((ArrayFormatter)formatter).Formatted;
+            var str = Encoding.UTF8.GetString(formatted.Array, formatted.Offset, formatted.Count);
+            Assert.Equal(GetHelloWorldExpectedString(_data), str.Substring(0, 555));
+        }
+
+        private static string GetHelloWorldExpectedString(int[] data)
+        {
+            MemoryStream ms = new MemoryStream();
+            StreamWriter streamWriter = new StreamWriter(ms, new UTF8Encoding(false), 1024, true);
+
+            StringBuilder sb = new StringBuilder();
+            StringWriter stringWriter = new StringWriter(sb);
+
+            TextWriter writer = streamWriter;
+
+            var json = new Newtonsoft.Json.JsonTextWriter(writer)
+            {
+                Formatting = Newtonsoft.Json.Formatting.None
+            };
+
+            json.WritePropertyName("ExtraArray");
+            json.WriteStartArray();
+            for (var i = 0; i < data.Length; i++)
+            {
+                json.WriteValue(data[i]);
+            }
+            json.WriteEnd();
+
+            json.Flush();
+
+            return Encoding.UTF8.GetString(ms.ToArray());
         }
 
         [Fact]
