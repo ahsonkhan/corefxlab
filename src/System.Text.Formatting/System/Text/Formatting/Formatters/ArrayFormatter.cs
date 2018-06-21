@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Formatting
 {
-    public struct ArrayFormatter : ITextBufferWriter, IDisposable
+    public class ArrayFormatter : ITextBufferWriter, IDisposable
     {
         ResizableArray<byte> _buffer;
         SymbolTable _symbolTable;

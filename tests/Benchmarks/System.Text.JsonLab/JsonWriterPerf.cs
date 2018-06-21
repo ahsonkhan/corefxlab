@@ -43,15 +43,17 @@ namespace System.Text.JsonLab.Benchmarks
         [Benchmark]
         public void WriterSystemTextJsonHelloWorld()
         {
-            _arrayFormatter.Clear();
-            WriterSystemTextJsonHelloWorldUtf8(Formatted, _arrayFormatter);
+            //_arrayFormatter.Clear();
+            //WriterSystemTextJsonHelloWorldUtf8(Formatted, _arrayFormatter);
+            WriterSystemTextJsonHelloWorldUtf8(Formatted);
         }
 
         [Benchmark]
         public void WriterSystemTextJsonHelloWorldCompact()
         {
-            _arrayFormatter.Clear();
-            WriterSystemTextJsonHelloWorldCompactUtf8(Formatted, _arrayFormatter);
+            //_arrayFormatter.Clear();
+            //WriterSystemTextJsonHelloWorldCompactUtf8(Formatted, _arrayFormatter);
+            WriterSystemTextJsonHelloWorldCompactUtf8(Formatted);
         }
 
         //[Benchmark]
@@ -98,6 +100,24 @@ namespace System.Text.JsonLab.Benchmarks
 
         private static void WriterSystemTextJsonHelloWorldCompactUtf8(bool formatted, ArrayFormatter output)
         {
+            var json = new JsonWriter(output, true, formatted);
+
+            json.WriteObject("message", "Hello, World!");
+        }
+
+        private static void WriterSystemTextJsonHelloWorldUtf8(bool formatted)
+        {
+            var output = new ArrayFormatter(1024, SymbolTable.InvariantUtf8);
+            var json = new JsonWriter(output, true, formatted);
+
+            json.WriteObjectStart();
+            json.WriteAttribute("message", "Hello, World!");
+            json.WriteObjectEnd();
+        }
+
+        private static void WriterSystemTextJsonHelloWorldCompactUtf8(bool formatted)
+        {
+            var output = new ArrayFormatter(1024, SymbolTable.InvariantUtf8);
             var json = new JsonWriter(output, true, formatted);
 
             json.WriteObject("message", "Hello, World!");
