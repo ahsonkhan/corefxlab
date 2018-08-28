@@ -162,55 +162,7 @@ namespace System.Text.JsonLab
         }
 
         public bool TryGetValue(string propertyName, out JsonObject value)
-        {
-            var record = GetRecord(0);
-
-            if (record.Length == 0)
-            {
-                JsonThrowHelper.ThrowKeyNotFoundException();
-            }
-
-            if (record.Type != JsonValueType.Object)
-            {
-                JsonThrowHelper.ThrowInvalidOperationException();
-            }
-
-            for (int i = DbRow.Size; i < _database.Length; i += DbRow.Size)
-            {
-                record = MemoryMarshal.Read<DbRow>(_database.Slice(i));
-
-                if (!record.IsSimpleValue)
-                {
-                    i += record.Length * DbRow.Size;
-                    continue;
-                }
-
-                if (new Utf8Span(_jsonData.Slice(record.Location, record.Length)) == propertyName)
-                {
-                    int newStart = i + DbRow.Size;
-                    int newEnd = newStart + DbRow.Size;
-
-                    record = MemoryMarshal.Read<DbRow>(_database.Slice(newStart));
-
-                    if (!record.IsSimpleValue)
-                    {
-                        newEnd = newEnd + DbRow.Size * record.Length;
-                    }
-
-                    value = new JsonObject(_jsonData, _database.Slice(newStart, newEnd - newStart));
-                    return true;
-                }
-
-                var valueType = MemoryMarshal.Read<JsonValueType>(_database.Slice(i + DbRow.Size + 8));
-                if (valueType != JsonValueType.Object && valueType != JsonValueType.Array)
-                {
-                    i += DbRow.Size;
-                }
-            }
-
-            value = default;
-            return false;
-        }
+            => TryGetValue((Utf8Span)propertyName, out value);
 
         public JsonObject this[Utf8Span name]
         {
@@ -225,18 +177,7 @@ namespace System.Text.JsonLab
             }
         }
 
-        public JsonObject this[string name]
-        {
-            get
-            {
-                if (TryGetValue(name, out JsonObject value))
-                {
-                    return value;
-                }
-                JsonThrowHelper.ThrowKeyNotFoundException();
-                return default;
-            }
-        }
+        public JsonObject this[string name] => this[(Utf8Span)name];
 
         public JsonObject this[int index]
         {
