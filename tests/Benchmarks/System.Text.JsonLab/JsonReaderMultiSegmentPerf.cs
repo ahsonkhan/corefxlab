@@ -74,8 +74,9 @@ namespace System.Text.JsonLab.Benchmarks
         [Benchmark]
         public void SingleSegmentSequence()
         {
-            var json = new Utf8JsonReader(_sequenceSingle);
-            while (json.Read()) ;
+            var reader = new JsonReader();
+            var json = reader.Read(_sequenceSingle);
+            while (json.MoveNext()) ;
         }
 
         [Benchmark]
@@ -85,8 +86,9 @@ namespace System.Text.JsonLab.Benchmarks
         [Arguments(8_000)]
         public void MultiSegmentSequence(int segmentSize)
         {
-            var json = new Utf8JsonReader(_sequences[segmentSize]);
-            while (json.Read()) ;
+            var reader = new JsonReader();
+            var json = reader.Read(_sequences[segmentSize]);
+            while (json.MoveNext()) ;
         }
     }
 }

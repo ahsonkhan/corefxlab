@@ -103,21 +103,22 @@ namespace System.Text.JsonLab.Tests
             return builder.ToString();
         }
 
-        public static void SetKeyValues(ref Utf8JsonReader json, Dictionary<string, object> dictionary, ref string key, ref object value)
+        public static void SetKeyValues(ref JsonReader.JsonToken json, Dictionary<string, object> dictionary, ref string key, ref object value)
         {
-            while (json.Read())
+            foreach(JsonReader.JsonToken jsonToken in json)
             {
-                switch (json.TokenType)
+                JsonTokenType tokenType = jsonToken.TokenType;
+                switch (tokenType)
                 {
                     case JsonTokenType.PropertyName:
-                        key = Encoding.UTF8.GetString(json.Value);
+                        key = Encoding.UTF8.GetString(jsonToken.Value);
                         dictionary.Add(key, null);
                         break;
                     case JsonTokenType.Value:
-                        switch (json.ValueType)
+                        switch (jsonToken.ValueType)
                         {
                             case JsonValueType.String:
-                                value = Encoding.UTF8.GetString(json.Value);
+                                value = Encoding.UTF8.GetString(jsonToken.Value);
                                 break;
                             case JsonValueType.False:
                                 value = false;
@@ -145,7 +146,8 @@ namespace System.Text.JsonLab.Tests
                 return false;
             }
 
-            var reader = new Utf8JsonReader(payload);
+            var json = new JsonReader();
+            JsonReader.JsonToken reader = json.Read(payload);
 
             CheckRead(ref reader);
             EnsureObjectStart(ref reader);
@@ -211,9 +213,9 @@ namespace System.Text.JsonLab.Tests
             return true;
         }
 
-        public static int? ReadAsInt32(ref Utf8JsonReader reader, string propertyName)
+        public static int? ReadAsInt32(ref JsonReader.JsonToken reader, string propertyName)
         {
-            reader.Read();
+            reader.MoveNext();
 
             if (reader.TokenType != JsonTokenType.Value || reader.ValueType != JsonValueType.Number)
             {
@@ -231,9 +233,9 @@ namespace System.Text.JsonLab.Tests
             return value;
         }
 
-        public static bool CheckRead(ref Utf8JsonReader reader)
+        public static bool CheckRead(ref JsonReader.JsonToken reader)
         {
-            if (!reader.Read())
+            if (!reader.MoveNext())
             {
                 throw new InvalidDataException("Unexpected end when reading JSON.");
             }
@@ -263,7 +265,7 @@ namespace System.Text.JsonLab.Tests
             return valueType.ToString();
         }
 
-        public static void EnsureObjectStart(ref Utf8JsonReader reader)
+        public static void EnsureObjectStart(ref JsonReader.JsonToken reader)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
             {
@@ -290,7 +292,8 @@ namespace System.Text.JsonLab.Tests
                 return false;
             }
 
-            var reader = new Utf8JsonReader(payload);
+            var json = new JsonReader();
+            JsonReader.JsonToken reader = json.Read(payload);
             CheckRead(ref reader);
             EnsureObjectStart(ref reader);
 
@@ -338,9 +341,9 @@ namespace System.Text.JsonLab.Tests
             return true;
         }
 
-        public static unsafe string ReadAsString(ref Utf8JsonReader reader, string propertyName)
+        public static unsafe string ReadAsString(ref JsonReader.JsonToken reader, string propertyName)
         {
-            reader.Read();
+            reader.MoveNext();
 
             if (reader.TokenType != JsonTokenType.Value || reader.ValueType != JsonValueType.String)
             {
@@ -361,10 +364,11 @@ namespace System.Text.JsonLab.Tests
 
         public static void JsonLabEmptyLoopHelper(byte[] data)
         {
-            var json = new Utf8JsonReader(data);
-            while (json.Read())
+            var reader = new JsonReader();
+            JsonReader.JsonToken json = reader.Read(data);
+            foreach (JsonReader.JsonToken jsonToken in json)
             {
-                JsonTokenType tokenType = json.TokenType;
+                JsonTokenType tokenType = jsonToken.TokenType;
                 switch (tokenType)
                 {
                     case JsonTokenType.StartObject:
@@ -375,7 +379,7 @@ namespace System.Text.JsonLab.Tests
                     case JsonTokenType.PropertyName:
                         break;
                     case JsonTokenType.Value:
-                        JsonValueType valueType = json.ValueType;
+                        JsonValueType valueType = jsonToken.ValueType;
                         switch (valueType)
                         {
                             case JsonValueType.Unknown:
@@ -420,7 +424,8 @@ namespace System.Text.JsonLab.Tests
         public static byte[] JsonLabSequenceReturnBytesHelper(byte[] data, out int length)
         {
             ReadOnlySequence<byte> sequence = CreateSegments(data);
-            var reader = new Utf8JsonReader(sequence);
+            var json = new JsonReader();
+            JsonReader.JsonToken reader = json.Read(sequence);
             byte[] result = JsonLabReaderLoop(data.Length, out length, ref reader);
             // TODO: Should we reset the value and valuetype once we are done?
             //Assert.True(reader.Value.IsEmpty);
@@ -428,15 +433,15 @@ namespace System.Text.JsonLab.Tests
             return result;
         }
 
-        public static byte[] JsonLabReaderLoop(int inpuDataLength, out int length, ref Utf8JsonReader json)
+        public static byte[] JsonLabReaderLoop(int inpuDataLength, out int length, ref JsonReader.JsonToken json)
         {
             byte[] outputArray = new byte[inpuDataLength];
             Span<byte> destination = outputArray;
 
-            while (json.Read())
+            foreach (JsonReader.JsonToken jsonToken in json)
             {
-                JsonTokenType tokenType = json.TokenType;
-                ReadOnlySpan<byte> valueSpan = json.Value;
+                JsonTokenType tokenType = jsonToken.TokenType;
+                ReadOnlySpan<byte> valueSpan = jsonToken.Value;
                 switch (tokenType)
                 {
                     case JsonTokenType.PropertyName:
@@ -446,7 +451,7 @@ namespace System.Text.JsonLab.Tests
                         destination = destination.Slice(valueSpan.Length + 2);
                         break;
                     case JsonTokenType.Value:
-                        JsonValueType valueType = json.ValueType;
+                        JsonValueType valueType = jsonToken.ValueType;
 
                         switch (valueType)
                         {
@@ -490,18 +495,18 @@ namespace System.Text.JsonLab.Tests
             return outputArray;
         }
 
-        public static object JsonLabReaderLoop(ref Utf8JsonReader json)
+        public static object JsonLabReaderLoop(ref JsonReader.JsonToken json)
         {
             object root = null;
 
-            while (json.Read())
+            foreach (JsonReader.JsonToken jsonToken in json)
             {
-                JsonTokenType tokenType = json.TokenType;
-                ReadOnlySpan<byte> valueSpan = json.Value;
+                JsonTokenType tokenType = jsonToken.TokenType;
+                ReadOnlySpan<byte> valueSpan = jsonToken.Value;
                 switch (tokenType)
                 {
                     case JsonTokenType.Value:
-                        JsonValueType valueType = json.ValueType;
+                        JsonValueType valueType = jsonToken.ValueType;
 
                         switch (valueType)
                         {
@@ -546,10 +551,12 @@ namespace System.Text.JsonLab.Tests
 
                         break;
                     case JsonTokenType.StartObject:
-                        root = JsonLabReaderDictionaryLoop(ref json);
+                        var copy = jsonToken;
+                        root = JsonLabReaderDictionaryLoop(ref copy);
                         break;
                     case JsonTokenType.StartArray:
-                        root = JsonLabReaderListLoop(ref json);
+                        copy = jsonToken;
+                        root = JsonLabReaderListLoop(ref copy);
                         break;
                     case JsonTokenType.EndObject:
                     case JsonTokenType.EndArray:
@@ -563,17 +570,17 @@ namespace System.Text.JsonLab.Tests
             return root;
         }
 
-        public static Dictionary<string, object> JsonLabReaderDictionaryLoop(ref Utf8JsonReader json)
+        public static Dictionary<string, object> JsonLabReaderDictionaryLoop(ref JsonReader.JsonToken json)
         {
             Dictionary<string, object> dictionary = new Dictionary<string, object>();
 
             string key = "";
             object value = null;
 
-            while (json.Read())
+            foreach (JsonReader.JsonToken jsonToken in json)
             {
-                JsonTokenType tokenType = json.TokenType;
-                ReadOnlySpan<byte> valueSpan = json.Value;
+                JsonTokenType tokenType = jsonToken.TokenType;
+                ReadOnlySpan<byte> valueSpan = jsonToken.Value;
                 switch (tokenType)
                 {
                     case JsonTokenType.PropertyName:
@@ -581,7 +588,7 @@ namespace System.Text.JsonLab.Tests
                         dictionary.Add(key, null);
                         break;
                     case JsonTokenType.Value:
-                        JsonValueType valueType = json.ValueType;
+                        JsonValueType valueType = jsonToken.ValueType;
 
                         switch (valueType)
                         {
@@ -611,7 +618,8 @@ namespace System.Text.JsonLab.Tests
 
                         break;
                     case JsonTokenType.StartObject:
-                        value = JsonLabReaderDictionaryLoop(ref json);
+                        var copy = jsonToken;
+                        value = JsonLabReaderDictionaryLoop(ref copy);
                         if (dictionary.TryGetValue(key, out _))
                         {
                             dictionary[key] = value;
@@ -622,7 +630,8 @@ namespace System.Text.JsonLab.Tests
                         }
                         break;
                     case JsonTokenType.StartArray:
-                        value = JsonLabReaderListLoop(ref json);
+                        copy = jsonToken;
+                        value = JsonLabReaderListLoop(ref copy);
                         if (dictionary.TryGetValue(key, out _))
                         {
                             dictionary[key] = value;
@@ -643,20 +652,20 @@ namespace System.Text.JsonLab.Tests
             return dictionary;
         }
 
-        public static List<object> JsonLabReaderListLoop(ref Utf8JsonReader json)
+        public static List<object> JsonLabReaderListLoop(ref JsonReader.JsonToken json)
         {
             List<object> arrayList = new List<object>();
 
             object value = null;
 
-            while (json.Read())
+            foreach (JsonReader.JsonToken jsonToken in json)
             {
-                JsonTokenType tokenType = json.TokenType;
-                ReadOnlySpan<byte> valueSpan = json.Value;
+                JsonTokenType tokenType = jsonToken.TokenType;
+                ReadOnlySpan<byte> valueSpan = jsonToken.Value;
                 switch (tokenType)
                 {
                     case JsonTokenType.Value:
-                        JsonValueType valueType = json.ValueType;
+                        JsonValueType valueType = jsonToken.ValueType;
 
                         switch (valueType)
                         {
@@ -679,11 +688,13 @@ namespace System.Text.JsonLab.Tests
 
                         break;
                     case JsonTokenType.StartObject:
-                        value = JsonLabReaderDictionaryLoop(ref json);
+                        var copy = jsonToken;
+                        value = JsonLabReaderDictionaryLoop(ref copy);
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.StartArray:
-                        value = JsonLabReaderListLoop(ref json);
+                        copy = jsonToken;
+                        value = JsonLabReaderListLoop(ref copy);
                         arrayList.Add(value);
                         break;
                     case JsonTokenType.EndArray:
@@ -699,13 +710,15 @@ namespace System.Text.JsonLab.Tests
 
         public static byte[] JsonLabReturnBytesHelper(byte[] data, out int length)
         {
-            var reader = new Utf8JsonReader(data);
+            var json = new JsonReader();
+            JsonReader.JsonToken reader = json.Read(data);
             return JsonLabReaderLoop(data.Length, out length, ref reader);
         }
 
         public static object JsonLabReturnObjectHelper(byte[] data)
         {
-            var reader = new Utf8JsonReader(data);
+            var json = new JsonReader();
+            JsonReader.JsonToken reader = json.Read(data);
             return JsonLabReaderLoop(ref reader);
         }
     }

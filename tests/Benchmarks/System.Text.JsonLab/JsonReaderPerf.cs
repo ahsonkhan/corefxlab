@@ -116,22 +116,25 @@ namespace System.Text.JsonLab.Benchmarks
         [Benchmark]
         public void ReaderSystemTextJsonLabSpanEmptyLoop()
         {
-            var json = new Utf8JsonReader(_dataUtf8);
-            while (json.Read()) ;
+            var reader = new JsonReader();
+            var json = reader.Read(_dataUtf8);
+            while (json.MoveNext()) ;
         }
 
         [Benchmark]
         public void ReaderSystemTextJsonLabSingleSpanSequenceEmptyLoop()
         {
-            var json = new Utf8JsonReader(_sequenceSingle);
-            while (json.Read()) ;
+            var reader = new JsonReader();
+            var json = reader.Read(_sequenceSingle);
+            while (json.MoveNext()) ;
         }
 
         [Benchmark]
         public void ReaderSystemTextJsonLabMultiSpanSequenceEmptyLoop()
         {
-            var json = new Utf8JsonReader(_sequence);
-            while (json.Read()) ;
+            var reader = new JsonReader();
+            var json = reader.Read(_sequence);
+            while (json.MoveNext()) ;
         }
 
         [Benchmark]
@@ -140,10 +143,11 @@ namespace System.Text.JsonLab.Benchmarks
             var outputArray = new byte[_dataUtf8.Length * 2];
 
             Span<byte> destination = outputArray;
-            var json = new Utf8JsonReader(_dataUtf8);
-            while (json.Read())
+            var reader = new JsonReader();
+            var json = reader.Read(_dataUtf8);
+            foreach(JsonReader.JsonToken jsonToken in json)
             {
-                JsonTokenType tokenType = json.TokenType;
+                JsonTokenType tokenType = jsonToken.TokenType;
                 ReadOnlySpan<byte> valueSpan = json.Value;
                 switch (tokenType)
                 {

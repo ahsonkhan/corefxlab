@@ -21,8 +21,9 @@ namespace System.Text.JsonLab
         public JsonObject Parse()
         {
             var database = new CustomDb(_pool, DbRow.Size + _utf8Json.Length);
-            var stack = new CustomStack(Utf8JsonReader.StackFreeMaxDepth * StackRow.Size);
-            var reader = new Utf8JsonReader(_utf8Json);
+            var stack = new CustomStack(JsonReader.StackFreeMaxDepth * StackRow.Size);
+            var json = new JsonReader();
+            JsonReader.JsonToken reader = json.Read(_utf8Json);
 
             bool inArray = false;
             int arrayItemsCount = 0;
@@ -30,10 +31,9 @@ namespace System.Text.JsonLab
             int numberOfRowsForValues = 0;
             int parentLocation = -1;
 
-            while (reader.Read())
+            foreach(JsonReader.JsonToken jsonToken in reader)
             {
-                JsonTokenType tokenType = reader.TokenType;
-
+                JsonTokenType tokenType = jsonToken.TokenType;
                 if (tokenType == JsonTokenType.StartObject)
                 {
                     if (parentLocation != -1)
@@ -92,7 +92,7 @@ namespace System.Text.JsonLab
                         arrayItemsCount++;
                 }
 
-                inArray = reader.InArray;
+                inArray = json.InArray;
             }
 
             stack.Dispose();
