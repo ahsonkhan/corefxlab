@@ -520,8 +520,20 @@ namespace System.Text.JsonLab.Tests
                 }
                 Assert.True(false, $"Expected JsonReaderException was not thrown. Max depth allowed = {json.MaxDepth} | Max depth reached = {maxDepth}");
             }
-            catch (JsonReaderException)
-            { }
+            catch (JsonReaderException ex)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    try
+                    {
+                        json.Read();
+                        Assert.True(false, "Retry reading after JsonReaderException should consistently throw.");
+                    }
+                    catch (JsonReaderException retryEx)
+                    {
+                    }
+                }
+            }
         }
 
         [Theory]
@@ -716,6 +728,8 @@ namespace System.Text.JsonLab.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedPosition, ex.LinePosition);
+
+                    RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
                 }
             }
         }
@@ -769,6 +783,8 @@ namespace System.Text.JsonLab.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedPosition, ex.LinePosition);
+
+                    RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
                 }
             }
         }
@@ -796,6 +812,8 @@ namespace System.Text.JsonLab.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     //Assert.Equal(expectedPosition, ex.LinePosition); //TODO: LinePosition needs to be in UTF-16 characters
+
+                    RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
                 }
             }
         }
@@ -879,6 +897,7 @@ namespace System.Text.JsonLab.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedPosition, ex.LinePosition);
+                    RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
                 }
 
                 ReadOnlyMemory<byte> dataMemory = dataUtf8;
@@ -903,6 +922,8 @@ namespace System.Text.JsonLab.Tests
                     {
                         Assert.Equal(expectedlineNumber, ex.LineNumber);
                         Assert.Equal(expectedPosition, ex.LinePosition);
+
+                        RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
                     }
                 }
             }
@@ -1148,6 +1169,8 @@ namespace System.Text.JsonLab.Tests
             {
                 Assert.Equal(expectedlineNumber, ex.LineNumber);
                 Assert.Equal(expectedPosition, ex.LinePosition);
+
+                RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
             }
 
             ReadOnlyMemory<byte> dataMemory = dataUtf8;
@@ -1177,6 +1200,8 @@ namespace System.Text.JsonLab.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedPosition, ex.LinePosition);
+
+                    RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
                 }
             }
         }
@@ -1224,6 +1249,8 @@ namespace System.Text.JsonLab.Tests
             {
                 Assert.Equal(expectedlineNumber, ex.LineNumber);
                 Assert.Equal(expectedPosition, ex.LinePosition);
+
+                RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
             }
 
             ReadOnlyMemory<byte> dataMemory = dataUtf8;
@@ -1248,6 +1275,8 @@ namespace System.Text.JsonLab.Tests
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedPosition, ex.LinePosition);
+
+                    RetryAfterException(ref json, expectedlineNumber, expectedPosition, ex.Message);
                 }
             }
         }

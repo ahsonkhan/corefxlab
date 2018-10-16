@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ArrayDepthTooLarge" xml:space="preserve">
-    <value>Depth of {0} within an array is larger than max depth of {1}.</value>
+    <value>Depth of {0} within an array is larger than max depth of {1}. Update the MaxDepth property.</value>
   </data>
   <data name="ArrayEndWithinObject" xml:space="preserve">
     <value>We are within an object but observed an ']'.</value>
@@ -187,7 +187,7 @@
     <value>Expected valid end of json payload with TokenType either EndArray or EndObject. Current token type is '{0}'.</value>
   </data>
   <data name="ObjectDepthTooLarge" xml:space="preserve">
-    <value>Depth of {0} within an object is larger than max depth of {1}.</value>
+    <value>Depth of {0} within an object is larger than max depth of {1}. Update the MaxDepth property.</value>
   </data>
   <data name="ObjectEndWithinArray" xml:space="preserve">
     <value>We are within an array but observed an '}}'.</value>

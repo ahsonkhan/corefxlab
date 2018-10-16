@@ -62,7 +62,7 @@ namespace System.Text.JsonLab {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Depth of {0} within an array is larger than max depth of {1}..
+        ///   Looks up a localized string similar to Depth of {0} within an array is larger than max depth of {1}. Update the MaxDepth property..
         /// </summary>
         internal static string ArrayDepthTooLarge {
             get {
@@ -269,7 +269,7 @@ namespace System.Text.JsonLab {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Depth of {0} within an object is larger than max depth of {1}..
+        ///   Looks up a localized string similar to Depth of {0} within an object is larger than max depth of {1}. Update the MaxDepth property..
         /// </summary>
         internal static string ObjectDepthTooLarge {
             get {

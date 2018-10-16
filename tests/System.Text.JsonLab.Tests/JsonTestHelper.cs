@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Formatting;
+using Xunit;
 
 namespace System.Text.JsonLab.Tests
 {
@@ -385,6 +386,25 @@ namespace System.Text.JsonLab.Tests
                         break;
                     default:
                         throw new ArgumentException();
+                }
+            }
+        }
+
+        public static void RetryAfterException(ref Utf8JsonReader json, int expectedlineNumber, int expectedPosition, string exceptionMessage)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    json.Read();
+                    Assert.True(false, "Retry reading after JsonReaderException should consistently throw.");
+                }
+                catch (JsonReaderException retryEx)
+                {
+                    // We do not gaurantee these values will consistently match
+                    //Assert.Equal(expectedlineNumber, retryEx.LineNumber);
+                    //Assert.Equal(expectedPosition, retryEx.LinePosition);
+                    //Assert.Equal(exceptionMessage, retryEx.Message);
                 }
             }
         }

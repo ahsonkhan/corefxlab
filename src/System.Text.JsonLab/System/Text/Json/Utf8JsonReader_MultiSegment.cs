@@ -29,6 +29,7 @@ namespace System.Text.JsonLab
             _isSingleSegment = data.IsSingleSegment; //true;
             _buffer = _reader.CurrentSpan;  //data.ToArray();
             Consumed = 0;
+            _consumedAtStart = Consumed;
             TokenStartIndex = Consumed;
             _maxDepth = StackFreeMaxDepth;
             Value = ReadOnlySpan<byte>.Empty;
@@ -65,6 +66,7 @@ namespace System.Text.JsonLab
             _isSingleSegment = data.IsSingleSegment; //true;
             _buffer = _reader.CurrentSpan;  //data.ToArray();
             Consumed = 0;
+            _consumedAtStart = Consumed;
             TokenStartIndex = Consumed;
             _maxDepth = StackFreeMaxDepth;
             Value = ReadOnlySpan<byte>.Empty;

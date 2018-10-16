@@ -16,7 +16,7 @@ namespace System.Text.JsonLab
 
         private readonly ReadOnlySpan<byte> _buffer;
 
-        public long Consumed { get; private set; }
+        public long Consumed { get; internal set; }
 
         internal long TokenStartIndex { get; private set; }
 
@@ -75,6 +75,7 @@ namespace System.Text.JsonLab
         }
 
         private JsonReaderOptions _readerOptions;
+        internal long _consumedAtStart;
 
         public JsonReaderState State
             => new JsonReaderState
@@ -126,6 +127,7 @@ namespace System.Text.JsonLab
             _isSingleSegment = true;
             _buffer = data;
             Consumed = 0;
+            _consumedAtStart = Consumed;
             TokenStartIndex = Consumed;
             _maxDepth = StackFreeMaxDepth;
             Value = ReadOnlySpan<byte>.Empty;
@@ -162,6 +164,7 @@ namespace System.Text.JsonLab
             _isSingleSegment = true;
             _buffer = data;
             Consumed = 0;
+            _consumedAtStart = Consumed;
             TokenStartIndex = Consumed;
             _maxDepth = StackFreeMaxDepth;
             Value = ReadOnlySpan<byte>.Empty;
@@ -175,6 +178,7 @@ namespace System.Text.JsonLab
         /// <returns>True if the token was read successfully, else false.</returns>
         public bool Read()
         {
+            _consumedAtStart = Consumed;
             return _isSingleSegment ? ReadSingleSegment() : ReadMultiSegment(ref _reader);
         }
 
