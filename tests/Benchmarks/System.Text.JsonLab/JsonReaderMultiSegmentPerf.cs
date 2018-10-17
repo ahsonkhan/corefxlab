@@ -5,21 +5,22 @@
 using BenchmarkDotNet.Attributes;
 using Benchmarks;
 using System.Buffers;
+using System.Buffers.Reader;
 using System.Buffers.Tests;
 using System.Collections.Generic;
 
 namespace System.Text.JsonLab.Benchmarks
 {
     // Since there are 15 tests here (5 * 3), setting low values for the warmupCount and targetCount
-    [SimpleJob(warmupCount: 3, targetCount: 5)]
+    //[SimpleJob(warmupCount: 3, targetCount: 5)]
     [MemoryDiagnoser]
     public class JsonReaderMultiSegmentPerf
     {
         // Keep the JsonStrings resource names in sync with TestCaseType enum values.
         public enum TestCaseType
         {
-            Json4KB,
-            Json40KB,
+            //Json4KB,
+            //Json40KB,
             Json400KB
         }
 
@@ -37,6 +38,28 @@ namespace System.Text.JsonLab.Benchmarks
         public void Setup()
         {
             _jsonString = JsonStrings.ResourceManager.GetString(TestCase.ToString());
+
+            char[] whitespace = { ' ', '\t', '\r', '\n' };
+            var builder = new StringBuilder();
+            var random = new Random(42);
+            for (int i = 0; i < 1_000; i++)
+            {
+                int index = random.Next(0, 4);
+                builder.Append(whitespace[index]);
+            }
+            _jsonString = builder.ToString();
+
+            _jsonString = " a";
+
+
+            /*builder = new StringBuilder();
+            builder.Append('\"');
+            for (int i = 0; i < 1_000; i++)
+            {
+                builder.Append('a');
+            }
+            builder.Append('\"');
+            _jsonString = builder.ToString();*/
 
             _dataUtf8 = Encoding.UTF8.GetBytes(_jsonString);
 
@@ -71,29 +94,23 @@ namespace System.Text.JsonLab.Benchmarks
             return BufferFactory.Create(buffers);
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void SingleSegmentSequence()
         {
             var json = new Utf8JsonReader(_sequenceSingle);
             while (json.Read()) ;
         }
 
-        [Benchmark]
-        [Arguments(1_000)]
-        [Arguments(2_000)]
+        //[Benchmark]
         [Arguments(4_000)]
-        [Arguments(8_000)]
         public void MultiSegmentSequence(int segmentSize)
         {
             var json = new Utf8JsonReader(_sequences[segmentSize]);
             while (json.Read()) ;
         }
 
-        [Benchmark]
-        [Arguments(1_000)]
-        [Arguments(2_000)]
+        //[Benchmark]
         [Arguments(4_000)]
-        [Arguments(8_000)]
         public void MultiSegmentSequenceUsingSpan(int segmentSize)
         {
             ReadOnlySequence<byte> sequenceMultiple = _sequences[segmentSize];
@@ -131,6 +148,142 @@ namespace System.Text.JsonLab.Benchmarks
                 }
             }
             ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        [Benchmark]
+        public void Temp1()
+        {
+            var reader = new BufferReader<byte>(_sequences[4_000]);
+            SkipWhiteSpace(ref reader);
+        }
+
+        [Benchmark(Baseline = true)]
+        public void Temp2()
+        {
+            var reader = _sequenceSingle.First.Span;
+            SkipWhiteSpace(reader);
+        }
+
+        private int SkipWhiteSpace(ref BufferReader<byte> reader)
+        {
+            int _position = 0;
+            while (true)
+            {
+                reader.TryPeek(out byte val);
+                if (val != ' ' && val != '\r' && val != '\n' && val != '\t')
+                {
+                    break;
+                }
+                reader.Advance(1);
+                // TODO: Does this work for Windows and Unix?
+                if (val == '\n')
+                {
+                    _position = 0;
+                }
+                else
+                {
+                    _position++;
+                }
+            }
+            return _position;
+        }
+
+        private int SkipWhiteSpace(ReadOnlySpan<byte> _buffer)
+        {
+            int _position = 0;
+            //Create local copy to avoid bounds checks.
+            ReadOnlySpan<byte> localCopy = _buffer;
+            for (int i = 0; i < localCopy.Length; i++)
+            {
+                byte val = localCopy[i];
+                if (val != ' ' &&
+                    val != '\r' &&
+                    val != '\n' &&
+                    val != '\t')
+                {
+                    break;
+                }
+
+                if (val == '\n')
+                {
+                    _position = 0;
+                }
+                else
+                {
+                    _position++;
+                }
+            }
+            return _position;
+        }
+
+        private bool ConsumeString(ref BufferReader<byte> reader)
+        {
+            reader.Advance(1);
+            if (reader.TryReadTo(out ReadOnlySpan<byte> value, (byte)'\"', (byte)'\\', advancePastDelimiter: true))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private bool ConsumeString(ReadOnlySpan<byte> _buffer)
+        {
+            //Create local copy to avoid bounds checks.
+            ReadOnlySpan<byte> localCopy = _buffer;
+
+            int idx = localCopy.Slice(1).IndexOf((byte)'\"');
+            if (idx < 0)
+            {
+                return false;
+            }
+
+            if (localCopy[idx] != '\\')
+            {
+                localCopy = localCopy.Slice(1, idx);
+                return true;
+            }
+            else
+            {
+                return ConsumeStringWithNestedQuotes(_buffer);
+            }
+        }
+
+        private bool ConsumeStringWithNestedQuotes(ReadOnlySpan<byte> _buffer)
+        {
+            //TODO: Optimize looking for nested quotes
+            //TODO: Avoid redoing first IndexOf search
+            long i = 0 + 1;
+            while (true)
+            {
+                int counter = 0;
+                int foundIdx = _buffer.Slice((int)i).IndexOf((byte)'\"');
+                if (foundIdx == -1)
+                {
+                    return false;
+                }
+                if (foundIdx == 0)
+                    break;
+                for (long j = i + foundIdx - 1; j >= i; j--)
+                {
+                    if (_buffer[(int)j] != '\\')
+                    {
+                        if (counter % 2 == 0)
+                        {
+                            i += foundIdx;
+                            goto FoundEndOfString;
+                        }
+                        break;
+                    }
+                    else
+                        counter++;
+                }
+                i += foundIdx + 1;
+            }
+
+        FoundEndOfString:
+            long startIndex = 1;
+            ReadOnlySpan<byte> localCopy = _buffer.Slice((int)startIndex, (int)(i - startIndex));
+            return true;
         }
     }
 }
