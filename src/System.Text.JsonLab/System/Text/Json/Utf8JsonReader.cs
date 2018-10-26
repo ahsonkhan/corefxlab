@@ -339,6 +339,124 @@ namespace System.Text.JsonLab
                 return ReadNextSegment();
         }
 
+        internal static bool Read(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            return ReadSingleSegmentStatic(ref state, data, ref localState);
+        }
+
+        private static bool ReadSingleSegmentStatic(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            bool retVal = false;
+
+            if (localState._consumed >= (uint)data.Length)
+            {
+                if (!state._isSingleValue && localState._isFinalBlock)
+                {
+                    if (state._tokenType != JsonTokenType.EndArray && state._tokenType != JsonTokenType.EndObject)
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.InvalidEndOfJson);
+                }
+                goto Done;
+            }
+
+            byte first = data[localState._consumed];
+
+            if (first <= JsonConstants.Space)
+            {
+                SkipWhiteSpace(ref state, data, ref localState);
+                if (localState._consumed >= (uint)data.Length)
+                {
+                    if (!state._isSingleValue && localState._isFinalBlock)
+                    {
+                        if (state._tokenType != JsonTokenType.EndArray && state._tokenType != JsonTokenType.EndObject)
+                            ThrowJsonReaderException(ref state, ref localState, ExceptionResource.InvalidEndOfJson);
+                    }
+                    goto Done;
+                }
+                first = data[localState._consumed];
+            }
+
+            localState._tokenStartIndex = localState._consumed;
+
+            if (state._tokenType == JsonTokenType.None)
+            {
+                goto ReadFirstToken;
+            }
+
+            if (state._tokenType == JsonTokenType.StartObject)
+            {
+                if (first == JsonConstants.CloseBrace)
+                {
+                    localState._consumed++;
+                    state._position++;
+                    EndObject(ref state, data, ref localState);
+                }
+                else
+                {
+                    if (first != JsonConstants.Quote)
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
+
+                    localState._tokenStartIndex++;
+                    int prevConsumed = localState._consumed;
+                    long prevPosition = state._position;
+                    if (ConsumePropertyName(ref state, data, ref localState))
+                    {
+                        return true;
+                    }
+                    localState._consumed = prevConsumed;
+                    state._tokenType = JsonTokenType.StartObject;
+                    state._position = prevPosition;
+                    return false;
+                }
+            }
+            else if (state._tokenType == JsonTokenType.StartArray)
+            {
+                if (first == JsonConstants.CloseBracket)
+                {
+                    localState._consumed++;
+                    state._position++;
+                    EndArray(ref state, data, ref localState);
+                }
+                else
+                {
+                    return ConsumeValue(first, ref state, data, ref localState);
+                }
+            }
+            else if (state._tokenType == JsonTokenType.PropertyName)
+            {
+                return ConsumeValue(first, ref state, data, ref localState);
+            }
+            else
+            {
+                int prevConsumed = localState._consumed;
+                long prevPosition = state._position;
+                long prevLineNumber = state._lineNumber;
+                JsonTokenType prevTokenType = state._tokenType;
+                InternalResult result = ConsumeNextToken(first, ref state, data, ref localState);
+                if (result == InternalResult.Success)
+                {
+                    return true;
+                }
+                if (result == InternalResult.FailureRollback)
+                {
+                    localState._consumed = prevConsumed;
+                    state._tokenType = prevTokenType;
+                    state._position = prevPosition;
+                    state._lineNumber = prevLineNumber;
+                }
+                return false;
+            }
+
+            retVal = true;
+
+        Done:
+            return retVal;
+
+        ReadFirstToken:
+            retVal = ReadFirstToken(first, ref state, data, ref localState);
+            goto Done;
+        }
+
+
         private bool ReadNextSegment()
         {
             if (_pooledArray == null)
@@ -564,6 +682,78 @@ namespace System.Text.JsonLab
             TokenType = JsonTokenType.EndArray;
         }
 
+        private static void StartObject(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            state._currentDepth++;
+            if (state._currentDepth > localState._maxDepth)
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ObjectDepthTooLarge);
+
+            state._position++;
+
+            if (state._currentDepth <= StackFreeMaxDepth)
+                state._containerMask = (state._containerMask << 1) | 1;
+            else
+                state._stack.Push(JsonTokenType.StartObject);
+
+            state._tokenType = JsonTokenType.StartObject;
+            state._inObject = true;
+        }
+
+        private static void EndObject(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            if (!state._inObject || state._currentDepth <= 0)
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ObjectEndWithinArray);
+
+            if (state._currentDepth <= StackFreeMaxDepth)
+            {
+                state._containerMask >>= 1;
+                state._inObject = (state._containerMask & 1) != 0;
+            }
+            else
+            {
+                state._inObject = state._stack.Pop() != JsonTokenType.StartArray;
+            }
+
+            state._currentDepth--;
+            state._tokenType = JsonTokenType.EndObject;
+        }
+
+        private static void StartArray(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            state._currentDepth++;
+            if (state._currentDepth > localState._maxDepth)
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ArrayDepthTooLarge);
+
+            state._position++;
+
+            if (state._currentDepth <= StackFreeMaxDepth)
+                state._containerMask = state._containerMask << 1;
+            else
+                state._stack.Push(JsonTokenType.StartArray);
+
+            state._tokenType = JsonTokenType.StartArray;
+            state._inObject = false;
+        }
+
+        private static void EndArray(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            if (state._inObject || state._currentDepth <= 0)
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ArrayEndWithinObject);
+
+            if (state._currentDepth <= StackFreeMaxDepth)
+            {
+                state._containerMask >>= 1;
+                state._inObject = (state._containerMask & 1) != 0;
+            }
+            else
+            {
+                state._inObject = state._stack.Pop() != JsonTokenType.StartArray;
+            }
+
+            state._currentDepth--;
+            state._tokenType = JsonTokenType.EndArray;
+        }
+
         private bool ReadFirstToken(byte first)
         {
             if (first == JsonConstants.OpenBrace)
@@ -637,6 +827,85 @@ namespace System.Text.JsonLab
                     }
                 }
                 ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, _buffer[_consumed]);
+            }
+            return true;
+        }
+
+        private static bool ReadFirstToken(byte first, ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            if (first == JsonConstants.OpenBrace)
+            {
+                state._currentDepth++;
+                state._containerMask = 1;
+                state._tokenType = JsonTokenType.StartObject;
+                localState._consumed++;
+                state._position++;
+                state._inObject = true;
+                state._isSingleValue = false;
+            }
+            else if (first == JsonConstants.OpenBracket)
+            {
+                state._currentDepth++;
+                state._tokenType = JsonTokenType.StartArray;
+                localState._consumed++;
+                state._position++;
+                state._isSingleValue = false;
+            }
+            else
+            {
+                if ((uint)(first - '0') <= '9' - '0' || first == '-')
+                {
+                    if (!TryGetNumber(data.Slice(localState._consumed), out ReadOnlySpan<byte> number, ref state, ref localState))
+                        return false;
+                    //Value = number;
+                    state._valueStart = localState._tokenStartIndex;
+                    state._valueLength = number.Length;
+                    state._tokenType = JsonTokenType.Number;
+                    localState._consumed += number.Length;
+                    state._position += number.Length;
+                    goto Done;
+                }
+                else if (ConsumeValue(first, ref state, data, ref localState))
+                {
+                    goto Done;
+                }
+
+                return false;
+
+            Done:
+                if (localState._consumed >= (uint)data.Length)
+                {
+                    return true;
+                }
+
+                if (data[localState._consumed] <= JsonConstants.Space)
+                {
+                    SkipWhiteSpace(ref state, data, ref localState);
+                    if (localState._consumed >= (uint)data.Length)
+                    {
+                        return true;
+                    }
+                }
+
+                if (localState._readerOptions != JsonReaderOptions.Default)
+                {
+                    if (localState._readerOptions == JsonReaderOptions.AllowComments)
+                    {
+                        if (state._tokenType == JsonTokenType.Comment || data[localState._consumed] == JsonConstants.Solidus)
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        // JsonReaderOptions.SkipComments
+                        if (data[localState._consumed] == JsonConstants.Solidus)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedEndAfterSingleJson, data[localState._consumed]);
             }
             return true;
         }
@@ -889,6 +1158,107 @@ namespace System.Text.JsonLab
             return InternalResult.Success;
         }
 
+        private static InternalResult ConsumeNextToken(byte marker, ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            localState._consumed++;
+            state._position++;
+
+            if (localState._readerOptions != JsonReaderOptions.Default)
+            {
+                //TODO: Re-evaluate use of InternalResult enum for the common case
+                if (localState._readerOptions == JsonReaderOptions.AllowComments)
+                {
+                    if (marker == JsonConstants.Solidus)
+                    {
+                        localState._consumed--;
+                        state._position--;
+                        return InternalResult.Success;
+                    }
+                    if (state._tokenType == JsonTokenType.Comment)
+                    {
+                        localState._consumed--;
+                        state._position--;
+                        state._tokenType = state._stack.Pop();
+                        if (ReadSingleSegmentStatic(ref state, data, ref localState))
+                            return InternalResult.Success;
+                        else
+                        {
+                            state._stack.Push(state._tokenType);
+                            return InternalResult.FailureRollback;
+                        }
+                    }
+                }
+                else
+                {
+                    // JsonReaderOptions.SkipComments
+                    if (marker == JsonConstants.Solidus)
+                    {
+                        localState._consumed--;
+                        state._position--;
+                        return InternalResult.FailureRollback;
+                    }
+                }
+            }
+
+            if (marker == JsonConstants.ListSeperator)
+            {
+                if (localState._consumed >= (uint)data.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        localState._consumed--;
+                        state._position--;
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedStartOfPropertyOrValueNotFound);
+                    }
+                    else return InternalResult.FailureRollback;
+                }
+                byte first = data[localState._consumed];
+
+                if (first <= JsonConstants.Space)
+                {
+                    SkipWhiteSpace(ref state, data, ref localState);
+                    // The next character must be a start of a property name or value.
+                    if (localState._consumed >= (uint)data.Length)
+                    {
+                        if (localState._isFinalBlock)
+                        {
+                            ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedStartOfPropertyOrValueNotFound);
+                        }
+                        else return InternalResult.FailureRollback;
+                    }
+                    first = data[localState._consumed];
+                }
+
+                localState._tokenStartIndex = localState._consumed;
+                if (state._inObject)
+                {
+                    if (first != JsonConstants.Quote)
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedStartOfPropertyNotFound, first);
+                    localState._tokenStartIndex++;
+                    return ConsumePropertyName(ref state, data, ref localState) ? InternalResult.Success : InternalResult.FailureRollback;
+                }
+                else
+                {
+                    return ConsumeValue(first, ref state, data, ref localState) ? InternalResult.Success : InternalResult.FailureRollback;
+                }
+            }
+            else if (marker == JsonConstants.CloseBrace)
+            {
+                EndObject(ref state, data, ref localState);
+            }
+            else if (marker == JsonConstants.CloseBracket)
+            {
+                EndArray(ref state, data, ref localState);
+            }
+            else
+            {
+                localState._consumed--;
+                state._position--;
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.FoundInvalidCharacter, marker);
+            }
+            return InternalResult.Success;
+        }
+
         /// <summary>
         /// This method contains the logic for processing the next value token and determining
         /// what type of data it is.
@@ -979,6 +1349,65 @@ namespace System.Text.JsonLab
                 }
 
                 ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfValueNotFound, marker);
+            }
+            return true;
+        }
+
+        private static bool ConsumeValue(byte marker, ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            if (marker == JsonConstants.Quote)
+            {
+                localState._tokenStartIndex++;
+                return ConsumeStringVectorized(ref state, data, ref localState);
+            }
+            else if (marker == JsonConstants.OpenBrace)
+            {
+                localState._consumed++;
+                StartObject(ref state, data, ref localState);
+            }
+            else if (marker == JsonConstants.OpenBracket)
+            {
+                localState._consumed++;
+                StartArray(ref state, data, ref localState);
+            }
+            else if ((uint)(marker - '0') <= '9' - '0' || marker == '-')
+            {
+                return ConsumeNumber(ref state, data, ref localState);
+            }
+            else if (marker == 'f')
+            {
+                return ConsumeFalse(ref state, data, ref localState);
+            }
+            else if (marker == 't')
+            {
+                return ConsumeTrue(ref state, data, ref localState);
+            }
+            else if (marker == 'n')
+            {
+                return ConsumeNull(ref state, data, ref localState);
+            }
+            else
+            {
+                if (localState._readerOptions != JsonReaderOptions.Default)
+                {
+                    if (localState._readerOptions == JsonReaderOptions.AllowComments)
+                    {
+                        if (marker == JsonConstants.Solidus)
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // JsonReaderOptions.SkipComments
+                        if (marker == JsonConstants.Solidus)
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedStartOfValueNotFound, marker);
             }
             return true;
         }
@@ -1176,6 +1605,19 @@ namespace System.Text.JsonLab
             return true;
         }
 
+        private static bool ConsumeNumber(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            if (!TryGetNumberLookForEnd(data.Slice(localState._consumed), out ReadOnlySpan<byte> number, ref state, ref localState))
+                return false;
+            //Value = number;
+            state._valueStart = localState._tokenStartIndex;
+            state._valueLength = number.Length;
+            state._tokenType = JsonTokenType.Number;
+            localState._consumed += number.Length;
+            state._position += number.Length;
+            return true;
+        }
+
         private bool ConsumeNull()
         {
             Value = JsonConstants.NullValue;
@@ -1206,6 +1648,41 @@ namespace System.Text.JsonLab
             TokenType = JsonTokenType.Null;
             _consumed += 4;
             _position += 4;
+            return true;
+        }
+
+        private static bool ConsumeNull(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            //Value = JsonConstants.NullValue;
+
+            ReadOnlySpan<byte> span = data.Slice(localState._consumed);
+
+            Debug.Assert(span.Length > 0 && span[0] == JsonConstants.NullValue[0]);
+
+            if (!span.StartsWith(JsonConstants.NullValue))
+            {
+                if (localState._isFinalBlock)
+                {
+                    goto Throw;
+                }
+                else
+                {
+                    if (span.Length > 1 && span[1] != JsonConstants.NullValue[1])
+                        goto Throw;
+                    if (span.Length > 2 && span[2] != JsonConstants.NullValue[2])
+                        goto Throw;
+                    if (span.Length >= JsonConstants.NullValue.Length)
+                        goto Throw;
+                    return false;
+                }
+            Throw:
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedNull, bytes: span);
+            }
+            state._valueStart = localState._tokenStartIndex;
+            state._valueLength = 4;
+            state._tokenType = JsonTokenType.Null;
+            localState._consumed += 4;
+            state._position += 4;
             return true;
         }
 
@@ -1244,6 +1721,43 @@ namespace System.Text.JsonLab
             return true;
         }
 
+        private static bool ConsumeFalse(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            //Value = JsonConstants.FalseValue;
+
+            ReadOnlySpan<byte> span = data.Slice(localState._consumed);
+
+            Debug.Assert(span.Length > 0 && span[0] == JsonConstants.FalseValue[0]);
+
+            if (!span.StartsWith(JsonConstants.FalseValue))
+            {
+                if (localState._isFinalBlock)
+                {
+                    goto Throw;
+                }
+                else
+                {
+                    if (span.Length > 1 && span[1] != JsonConstants.FalseValue[1])
+                        goto Throw;
+                    if (span.Length > 2 && span[2] != JsonConstants.FalseValue[2])
+                        goto Throw;
+                    if (span.Length > 3 && span[3] != JsonConstants.FalseValue[3])
+                        goto Throw;
+                    if (span.Length >= JsonConstants.FalseValue.Length)
+                        goto Throw;
+                    return false;
+                }
+            Throw:
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedFalse, bytes: span);
+            }
+            state._valueStart = localState._tokenStartIndex;
+            state._valueLength = 5;
+            state._tokenType = JsonTokenType.False;
+            localState._consumed += 5;
+            state._position += 5;
+            return true;
+        }
+
         private bool ConsumeTrue()
         {
             Value = JsonConstants.TrueValue;
@@ -1274,6 +1788,41 @@ namespace System.Text.JsonLab
             TokenType = JsonTokenType.True;
             _consumed += 4;
             _position += 4;
+            return true;
+        }
+
+        private static bool ConsumeTrue(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            //Value = JsonConstants.TrueValue;
+
+            ReadOnlySpan<byte> span = data.Slice(localState._consumed);
+
+            Debug.Assert(span.Length > 0 && span[0] == JsonConstants.TrueValue[0]);
+
+            if (!span.StartsWith(JsonConstants.TrueValue))
+            {
+                if (localState._isFinalBlock)
+                {
+                    goto Throw;
+                }
+                else
+                {
+                    if (span.Length > 1 && span[1] != JsonConstants.TrueValue[1])
+                        goto Throw;
+                    if (span.Length > 2 && span[2] != JsonConstants.TrueValue[2])
+                        goto Throw;
+                    if (span.Length >= JsonConstants.TrueValue.Length)
+                        goto Throw;
+                    return false;
+                }
+            Throw:
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedTrue, bytes: span);
+            }
+            state._valueStart = localState._tokenStartIndex;
+            state._valueLength = 4;
+            state._tokenType = JsonTokenType.True;
+            localState._consumed += 4;
+            state._position += 4;
             return true;
         }
 
@@ -1318,6 +1867,50 @@ namespace System.Text.JsonLab
             _consumed++;
             _position++;
             TokenType = JsonTokenType.PropertyName;
+            return true;
+        }
+
+        private static bool ConsumePropertyName(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            if (!ConsumeStringVectorized(ref state, data, ref localState))
+                return false;
+
+            //Create local copy to avoid bounds checks.
+            ReadOnlySpan<byte> localCopy = data;
+            if (localState._consumed >= (uint)localCopy.Length)
+            {
+                if (localState._isFinalBlock)
+                {
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedValueAfterPropertyNameNotFound);
+                }
+                else return false;
+            }
+
+            byte first = localCopy[localState._consumed];
+
+            if (first <= JsonConstants.Space)
+            {
+                SkipWhiteSpace(ref state, data, ref localState);
+                if (localState._consumed >= (uint)localCopy.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedValueAfterPropertyNameNotFound);
+                    }
+                    else return false;
+                }
+                first = localCopy[localState._consumed];
+            }
+
+            // The next character must be a key / value seperator. Validate and skip.
+            if (first != JsonConstants.KeyValueSeperator)
+            {
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedSeparaterAfterPropertyNameNotFound, first);
+            }
+
+            localState._consumed++;
+            state._position++;
+            state._tokenType = JsonTokenType.PropertyName;
             return true;
         }
 
@@ -1368,6 +1961,50 @@ namespace System.Text.JsonLab
             else
             {
                 return ConsumeStringWithNestedQuotes();
+            }
+        }
+
+        private static bool ConsumeStringVectorized(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            //Create local copy to avoid bounds checks.
+            ReadOnlySpan<byte> localCopy = data;
+
+            int idx = localCopy.Slice(localState._consumed + 1).IndexOf(JsonConstants.Quote);
+            if (idx < 0)
+            {
+                if (localState._isFinalBlock)
+                {
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.EndOfStringNotFound);
+                }
+                else return false;
+            }
+
+            if (localCopy[idx + localState._consumed] != JsonConstants.ReverseSolidus)
+            {
+                localCopy = localCopy.Slice(localState._consumed + 1, idx);
+
+                if (localCopy.IndexOfAnyControlOrEscape() != -1)
+                {
+                    state._position++;
+                    if (ValidateEscaping_AndHex(localCopy, ref state, ref localState))
+                        goto Done;
+                    return false;
+                }
+
+                state._position += idx + 1;
+
+            Done:
+                state._position++;
+                //Value = localCopy;
+                state._valueStart = localState._tokenStartIndex;
+                state._valueLength = localCopy.Length;
+                state._tokenType = JsonTokenType.String;
+                localState._consumed += idx + 2;
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -1425,6 +2062,66 @@ namespace System.Text.JsonLab
                 }
 
                 _position++;
+            }
+            return true;
+
+        False:
+            return false;
+        }
+
+        private static bool ValidateEscaping_AndHex(ReadOnlySpan<byte> data, ref JsonReaderState state, ref LocalState localState)
+        {
+            bool nextCharEscaped = false;
+            for (int i = 0; i < data.Length; i++)
+            {
+                byte currentByte = data[i];
+                if (currentByte == JsonConstants.ReverseSolidus)
+                {
+                    nextCharEscaped = !nextCharEscaped;
+                }
+                else if (nextCharEscaped)
+                {
+                    int index = JsonConstants.EscapableChars.IndexOf(currentByte);
+                    if (index == -1)
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.InvalidCharacterWithinString, currentByte);
+
+                    if (currentByte == 'n')
+                    {
+                        state._position = -1; // Should be 0, but we increment _position below already
+                        state._lineNumber++;
+                    }
+                    else if (currentByte == 'u')
+                    {
+                        state._position++;
+                        int startIndex = i + 1;
+                        for (int j = startIndex; j < data.Length; j++)
+                        {
+                            byte nextByte = data[j];
+                            if ((uint)(nextByte - '0') > '9' - '0' && (uint)(nextByte - 'A') > 'F' - 'A' && (uint)(nextByte - 'a') > 'f' - 'a')
+                            {
+                                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.InvalidCharacterWithinString, nextByte);
+                            }
+                            if (j - startIndex >= 4)
+                                break;
+                            state._position++;
+                        }
+                        i += 4;
+                        if (i >= data.Length)
+                        {
+                            if (localState._isFinalBlock)
+                                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.EndOfStringNotFound);
+                            else
+                                goto False;
+                        }
+                    }
+                    nextCharEscaped = false;
+                }
+                else if (currentByte < JsonConstants.Space)
+                {
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.InvalidCharacterWithinString, currentByte);
+                }
+
+                state._position++;
             }
             return true;
 
@@ -1513,6 +2210,33 @@ namespace System.Text.JsonLab
                 else
                 {
                     _position++;
+                }
+            }
+        }
+
+        private static void SkipWhiteSpace(ref JsonReaderState state, ReadOnlySpan<byte> data, ref LocalState localState)
+        {
+            //Create local copy to avoid bounds checks.
+            ReadOnlySpan<byte> localCopy = data;
+            for (; localState._consumed < localCopy.Length; localState._consumed++)
+            {
+                byte val = localCopy[localState._consumed];
+                if (val != JsonConstants.Space &&
+                    val != JsonConstants.CarriageReturn &&
+                    val != JsonConstants.LineFeed &&
+                    val != JsonConstants.Tab)
+                {
+                    break;
+                }
+
+                if (val == JsonConstants.LineFeed)
+                {
+                    state._lineNumber++;
+                    state._position = 0;
+                }
+                else
+                {
+                    state._position++;
                 }
             }
         }
@@ -1678,6 +2402,166 @@ namespace System.Text.JsonLab
             return true;
         }
 
+        private static bool TryGetNumber(ReadOnlySpan<byte> data, out ReadOnlySpan<byte> number, ref JsonReaderState state, ref LocalState localState)
+        {
+            Debug.Assert(data.Length > 0);
+
+            ReadOnlySpan<byte> delimiters = JsonConstants.Delimiters;
+
+            number = default;
+
+            int i = 0;
+            byte nextByte = data[i];
+
+            if (nextByte == '-')
+            {
+                i++;
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                    }
+                    else return false;
+                }
+
+                nextByte = data[i];
+                if ((uint)(nextByte - '0') > '9' - '0')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFound, nextByte);
+            }
+
+            Debug.Assert(nextByte >= '0' && nextByte <= '9');
+
+            if (nextByte == '0')
+            {
+                i++;
+                if (i < data.Length)
+                {
+                    nextByte = data[i];
+                    if (delimiters.IndexOf(nextByte) != -1)
+                        goto Done;
+
+                    if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedNextDigitComponentNotFound, nextByte);
+                }
+                else
+                {
+                    if (localState._isFinalBlock)
+                        goto Done;
+                    else return false;
+                }
+            }
+            else
+            {
+                i++;
+                for (; i < data.Length; i++)
+                {
+                    nextByte = data[i];
+                    if ((uint)(nextByte - '0') > '9' - '0')
+                        break;
+                }
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                        goto Done;
+                    else return false;
+                }
+                if (delimiters.IndexOf(nextByte) != -1)
+                    goto Done;
+                if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedNextDigitComponentNotFound, nextByte);
+            }
+
+            Debug.Assert(nextByte == '.' || nextByte == 'E' || nextByte == 'e');
+
+            if (nextByte == '.')
+            {
+                i++;
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                    }
+                    else return false;
+                }
+                nextByte = data[i];
+                if ((uint)(nextByte - '0') > '9' - '0')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFound, nextByte);
+                i++;
+                for (; i < data.Length; i++)
+                {
+                    nextByte = data[i];
+                    if ((uint)(nextByte - '0') > '9' - '0')
+                        break;
+                }
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                        goto Done;
+                    else return false;
+                }
+                if (delimiters.IndexOf(nextByte) != -1)
+                    goto Done;
+                if (nextByte != 'E' && nextByte != 'e')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
+            }
+
+            Debug.Assert(nextByte == 'E' || nextByte == 'e');
+            i++;
+
+            if (i >= data.Length)
+            {
+                if (localState._isFinalBlock)
+                {
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                }
+                else return false;
+            }
+
+            nextByte = data[i];
+            if (nextByte == '+' || nextByte == '-')
+            {
+                i++;
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                    }
+                    else return false;
+                }
+                nextByte = data[i];
+            }
+
+            if ((uint)(nextByte - '0') > '9' - '0')
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFound, nextByte);
+
+            i++;
+            for (; i < data.Length; i++)
+            {
+                nextByte = data[i];
+                if ((uint)(nextByte - '0') > '9' - '0')
+                    break;
+            }
+
+            if (i < data.Length)
+            {
+                if (delimiters.IndexOf(nextByte) == -1)
+                {
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
+                }
+            }
+            else if (!localState._isFinalBlock)
+            {
+                return false;
+            }
+
+        Done:
+            number = data.Slice(0, i);
+            return true;
+        }
+
         // https://tools.ietf.org/html/rfc7159#section-6
         private bool TryGetNumberLookForEnd(ReadOnlySpan<byte> data, out ReadOnlySpan<byte> number)
         {
@@ -1830,6 +2714,166 @@ namespace System.Text.JsonLab
                 }
             }
             else if (!IsLastSpan)
+            {
+                return false;
+            }
+
+        Done:
+            number = data.Slice(0, i);
+            return true;
+        }
+
+        private static bool TryGetNumberLookForEnd(ReadOnlySpan<byte> data, out ReadOnlySpan<byte> number, ref JsonReaderState state, ref LocalState localState)
+        {
+            Debug.Assert(data.Length > 0);
+
+            ReadOnlySpan<byte> delimiters = JsonConstants.Delimiters;
+
+            number = default;
+
+            int i = 0;
+            byte nextByte = data[i];
+
+            if (nextByte == '-')
+            {
+                i++;
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                    }
+                    else return false;
+                }
+
+                nextByte = data[i];
+                if ((uint)(nextByte - '0') > '9' - '0')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFound, nextByte);
+            }
+
+            Debug.Assert(nextByte >= '0' && nextByte <= '9');
+
+            if (nextByte == '0')
+            {
+                i++;
+                if (i < data.Length)
+                {
+                    nextByte = data[i];
+                    if (delimiters.IndexOf(nextByte) != -1)
+                        goto Done;
+
+                    if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedNextDigitComponentNotFound, nextByte);
+                }
+                else
+                {
+                    if (localState._isFinalBlock)
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
+                    else return false;
+                }
+            }
+            else
+            {
+                i++;
+                for (; i < data.Length; i++)
+                {
+                    nextByte = data[i];
+                    if ((uint)(nextByte - '0') > '9' - '0')
+                        break;
+                }
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
+                    else return false;
+                }
+                if (delimiters.IndexOf(nextByte) != -1)
+                    goto Done;
+                if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedNextDigitComponentNotFound, nextByte);
+            }
+
+            Debug.Assert(nextByte == '.' || nextByte == 'E' || nextByte == 'e');
+
+            if (nextByte == '.')
+            {
+                i++;
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                    }
+                    else return false;
+                }
+                nextByte = data[i];
+                if ((uint)(nextByte - '0') > '9' - '0')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFound, nextByte);
+                i++;
+                for (; i < data.Length; i++)
+                {
+                    nextByte = data[i];
+                    if ((uint)(nextByte - '0') > '9' - '0')
+                        break;
+                }
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
+                    else return false;
+                }
+                if (delimiters.IndexOf(nextByte) != -1)
+                    goto Done;
+                if (nextByte != 'E' && nextByte != 'e')
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
+            }
+
+            Debug.Assert(nextByte == 'E' || nextByte == 'e');
+            i++;
+
+            if (i >= data.Length)
+            {
+                if (localState._isFinalBlock)
+                {
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                }
+                else return false;
+            }
+
+            nextByte = data[i];
+            if (nextByte == '+' || nextByte == '-')
+            {
+                i++;
+                if (i >= data.Length)
+                {
+                    if (localState._isFinalBlock)
+                    {
+                        ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFoundEndOfData, nextByte);
+                    }
+                    else return false;
+                }
+                nextByte = data[i];
+            }
+
+            if ((uint)(nextByte - '0') > '9' - '0')
+                ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedDigitNotFound, nextByte);
+
+            i++;
+            for (; i < data.Length; i++)
+            {
+                nextByte = data[i];
+                if ((uint)(nextByte - '0') > '9' - '0')
+                    break;
+            }
+
+            if (i < data.Length)
+            {
+                if (delimiters.IndexOf(nextByte) == -1)
+                {
+                    ThrowJsonReaderException(ref state, ref localState, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
+                }
+            }
+            else if (!localState._isFinalBlock)
             {
                 return false;
             }

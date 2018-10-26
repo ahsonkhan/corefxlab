@@ -111,5 +111,112 @@ namespace System.Text.JsonLab.Tests
             Assert.Equal(sequenceMultiple.Length, jsonStream.Consumed);
             json.Dispose();
         }
+
+        [Theory]
+        [InlineData(10_000)]
+        [InlineData(100_000)]
+        [InlineData(1_000_000)]
+        [InlineData(10_000_000)]
+        [InlineData(1_000_000_000)]
+        public void StreamClass_StreamMaxTokenSize(int tokenSize)
+        {
+            byte[] dataUtf8 = new byte[tokenSize];
+            System.Array.Fill<byte>(dataUtf8, 97);
+
+            dataUtf8[0] = 34;
+            dataUtf8[dataUtf8.Length - 1] = 34;
+
+            var stream = new MemoryStream(dataUtf8);
+            using (var json = new JsonStreamReader(stream))
+            {
+                while (json.Read()) ;
+                Assert.Equal(dataUtf8.Length, json.Consumed);
+            }
+        }
+
+        [Fact]
+        public void StreamClass_StreamTokenSizeOverflow()
+        {
+            int tokenSize = 1_500_000_000; // 1.5GB
+            byte[] dataUtf8 = new byte[tokenSize];
+            System.Array.Fill<byte>(dataUtf8, 97);
+
+            dataUtf8[0] = 34;
+            dataUtf8[dataUtf8.Length - 1] = 34;
+
+            var stream = new MemoryStream(dataUtf8);
+            using (var json = new JsonStreamReader(stream))
+            {
+                try
+                {
+                    while (json.Read()) ;
+                    Assert.True(false, "Expected ArgumentException to be thrown since token size larger than 1 GB is not supported.");
+                }
+                catch (ArgumentException)
+                {
+                    Assert.Equal(0, json.Consumed);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(250)]   // 1 MB
+        [InlineData(250_000)]    // 1 GB
+        public void StreamClass_MultiSegmentSequenceLarge(int numberOfSegments)
+        {
+            const int segmentSize = 4_000;
+            byte[][] buffers = new byte[numberOfSegments][];
+
+            for (int j = 0; j < numberOfSegments; j++)
+            {
+                byte[] arr = new byte[segmentSize];
+
+                for (int i = 0; i < segmentSize - 7; i += 7)
+                {
+                    arr[i] = (byte)'"';
+                    arr[i + 1] = (byte)'a';
+                    arr[i + 2] = (byte)'a';
+                    arr[i + 3] = (byte)'a';
+                    arr[i + 4] = (byte)'"';
+                    arr[i + 5] = (byte)',';
+                    arr[i + 6] = (byte)' ';
+                }
+                arr[3_997] = (byte)' ';
+                arr[3_998] = (byte)' ';
+                arr[3_999] = (byte)' ';
+
+                buffers[j] = arr;
+            }
+
+            buffers[0][0] = (byte)'[';
+            buffers[0][1] = (byte)' ';
+            buffers[0][2] = (byte)' ';
+            buffers[0][3] = (byte)' ';
+            buffers[0][4] = (byte)' ';
+            buffers[0][5] = (byte)' ';
+
+            buffers[numberOfSegments - 1][segmentSize - 5] = (byte)']';
+            buffers[numberOfSegments - 1][segmentSize - 4] = (byte)' ';
+            buffers[numberOfSegments - 1][segmentSize - 3] = (byte)' ';
+            buffers[numberOfSegments - 1][segmentSize - 2] = (byte)' ';
+            buffers[numberOfSegments - 1][segmentSize - 1] = (byte)' ';
+
+            ReadOnlySequence<byte> sequenceMultiple = BufferFactory.Create(buffers);
+            var json = new Utf8JsonReader(sequenceMultiple);
+            while (json.Read()) ;
+            Assert.Equal(sequenceMultiple.Length, json.Consumed);
+            json.Dispose();
+
+            var stream = new MemoryStream(sequenceMultiple.ToArray());
+
+            using (var jsonStream = new JsonStreamReader(stream))
+            {
+                while (jsonStream.Read())
+                {
+                    var temp = jsonStream.Value;
+                }
+                Assert.Equal(sequenceMultiple.Length, jsonStream.Consumed);
+            }
+        }
     }
 }

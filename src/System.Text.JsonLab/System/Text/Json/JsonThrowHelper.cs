@@ -70,6 +70,11 @@ namespace System.Text.JsonLab
             GetJsonReaderException(ref json, resource, nextByte, bytes);
         }
 
+        public static void ThrowJsonReaderException(ref JsonReaderState state, ref LocalState localState, ExceptionResource resource = ExceptionResource.Default, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
+        {
+            throw new NotImplementedException();
+        }
+
         public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource = ExceptionResource.Default, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
         {
             GetJsonReaderException(ref json, resource, nextByte, bytes);
