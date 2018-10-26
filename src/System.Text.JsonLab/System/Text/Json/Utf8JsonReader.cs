@@ -18,8 +18,7 @@ namespace System.Text.JsonLab
 
         const int MinimumSegmentSize = 4_096;
 
-        private readonly ReadOnlySpan<byte> _buffer;
-        private BufferReader<byte> _reader;
+        private ReadOnlySpan<byte> _buffer;
 
         private long _consumed;
 
@@ -59,6 +58,14 @@ namespace System.Text.JsonLab
         // These properties are helpers for determining the current state of the reader
         internal bool InArray => !_inObject;
         private bool _inObject;
+
+        private SequencePosition _nextPosition;
+        private ReadOnlySequence<byte> _data;
+        private bool _isLastSegment;
+
+        private bool IsLastSpan => _isFinalBlock && (_isSingleSegment || _isLastSegment);
+
+        public ReadOnlySequence<byte> RawSequenceValue { get; private set; }
 
         /// <summary>
         /// Gets the token type of the last processed token in the JSON stream.
@@ -106,7 +113,7 @@ namespace System.Text.JsonLab
         private readonly bool _isFinalBlock;
         private bool _isSingleValue;
 
-        internal bool ConsumedEverything => _isSingleSegment ? _consumed >= (uint)_buffer.Length : _reader.End;
+        internal bool ConsumedEverything => _isSingleSegment ? _consumed >= (uint)_buffer.Length : _consumed >= _data.Length;
 
         internal long _lineNumber;
         internal long _position;
@@ -133,11 +140,16 @@ namespace System.Text.JsonLab
             TokenStartIndex = _consumed;
             _maxDepth = StackFreeMaxDepth;
             Value = ReadOnlySpan<byte>.Empty;
+            
             _isSingleValue = true;
             _readerOptions = JsonReaderOptions.Default;
 
-            _reader = default;
             _isSingleSegment = true;
+
+            RawSequenceValue = default;
+            _nextPosition = default;
+            _data = default;
+            _isLastSegment = true;
         }
 
         public Utf8JsonReader(ReadOnlySpan<byte> jsonData, bool isFinalBlock, JsonReaderState state = default)
@@ -174,8 +186,12 @@ namespace System.Text.JsonLab
             Value = ReadOnlySpan<byte>.Empty;
             _readerOptions = JsonReaderOptions.Default;
 
-            _reader = default;
             _isSingleSegment = true;
+
+            RawSequenceValue = default;
+            _nextPosition = default;
+            _data = default;
+            _isLastSegment = true;
         }
 
         public Utf8JsonReader(in ReadOnlySequence<byte> jsonData)
@@ -190,15 +206,43 @@ namespace System.Text.JsonLab
 
             _isFinalBlock = true;
 
-            _reader = new BufferReader<byte>(jsonData);
-            _isSingleSegment = jsonData.IsSingleSegment;
-            _buffer = _reader.CurrentSpan;
+            _buffer = jsonData.First.Span;
             _consumed = 0;
             TokenStartIndex = _consumed;
             _maxDepth = StackFreeMaxDepth;
             Value = ReadOnlySpan<byte>.Empty;
             _isSingleValue = true;
             _readerOptions = JsonReaderOptions.Default;
+
+            RawSequenceValue = default;
+            _nextPosition = default;
+            _data = jsonData;
+
+
+            if (jsonData.IsSingleSegment)
+            {
+                _isLastSegment = true;
+                _nextPosition = default;
+                _isSingleSegment = true;
+            }
+            else
+            {
+                _nextPosition = jsonData.Start;
+                if (_buffer.Length == 0)
+                {
+                    while (jsonData.TryGet(ref _nextPosition, out ReadOnlyMemory<byte> memory, advance: true))
+                    {
+                        if (memory.Length != 0)
+                        {
+                            _buffer = memory.Span;
+                            break;
+                        }
+                    }
+                }
+                _isLastSegment = !jsonData.TryGet(ref _nextPosition, out _, advance: true);
+                _isSingleSegment = false;
+            }
+
         }
 
         public Utf8JsonReader(in ReadOnlySequence<byte> jsonData, bool isFinalBlock, JsonReaderState state = default)
@@ -226,15 +270,41 @@ namespace System.Text.JsonLab
 
             _isFinalBlock = isFinalBlock;
 
-            _reader = new BufferReader<byte>(jsonData);
-            _isSingleSegment = jsonData.IsSingleSegment;
-            _buffer = _reader.CurrentSpan;
+            _buffer = jsonData.First.Span;
             _consumed = 0;
             TokenStartIndex = _consumed;
             _maxDepth = StackFreeMaxDepth;
             Value = ReadOnlySpan<byte>.Empty;
             _isSingleValue = true;
             _readerOptions = JsonReaderOptions.Default;
+
+            RawSequenceValue = default;
+            _data = jsonData;
+
+            if (jsonData.IsSingleSegment)
+            {
+                _nextPosition = default;
+                _isLastSegment = isFinalBlock;
+                _isSingleSegment = true;
+            }
+            else
+            {
+                _nextPosition = jsonData.Start;
+                if (_buffer.Length == 0)
+                {
+                    while (jsonData.TryGet(ref _nextPosition, out ReadOnlyMemory<byte> memory, advance: true))
+                    {
+                        if (memory.Length != 0)
+                        {
+                            _buffer = memory.Span;
+                            break;
+                        }
+                    }
+                }
+
+                _isLastSegment = !jsonData.TryGet(ref _nextPosition, out _, advance: true) && isFinalBlock; // Don't re-order to avoid short-circuiting
+                _isSingleSegment = false;
+            }
         }
 
         /// <summary>
@@ -243,7 +313,7 @@ namespace System.Text.JsonLab
         /// <returns>True if the token was read successfully, else false.</returns>
         public bool Read()
         {
-            return _isSingleSegment ? ReadSingleSegment() : ReadMultiSegment(ref _reader);
+            return _isSingleSegment ? ReadSingleSegment() : ReadMultiSegment();
         }
 
         public void Skip()
