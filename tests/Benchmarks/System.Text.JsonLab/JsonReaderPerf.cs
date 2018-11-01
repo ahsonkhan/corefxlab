@@ -114,7 +114,7 @@ namespace System.Text.JsonLab.Benchmarks
         }
 
         [Benchmark(Baseline = true)]
-        public void ReaderSystemTextJsonLabSpanEmptyLoop()
+        public void CurrentReader()
         {
             var json = new Utf8JsonReader(_dataUtf8);
             while (json.Read()) ;
@@ -129,7 +129,7 @@ namespace System.Text.JsonLab.Benchmarks
         }
 
         [Benchmark]
-        public void ReaderSystemTextJsonLabStreamTypeEmptyLoop()
+        public void RefStructStreamReader()
         {
             _stream.Seek(0, SeekOrigin.Begin);
             var json = new Utf8JsonReaderStream(_stream);
@@ -138,7 +138,16 @@ namespace System.Text.JsonLab.Benchmarks
         }
 
         [Benchmark]
-        public void ReaderSystemTextJsonLabStreamTypeNEWEmptyLoop()
+        public void ClassStreamReaderWithNewRefStructReader()
+        {
+            _stream.Seek(0, SeekOrigin.Begin);
+            var json = new Utf8JsonStream(_stream);
+            while (json.Read()) ;
+            json.Dispose();
+        }
+
+        [Benchmark]
+        public void ClassStreamReaderWithStatic()
         {
             _stream.Seek(0, SeekOrigin.Begin);
             using (var json = new JsonStreamReader(_stream))
