@@ -1253,6 +1253,69 @@ namespace System.Text.JsonLab.Tests
             return JsonLabReaderLoop(data.Length, out length, ref reader);
         }
 
+        public static byte[] JsonLabReturnBytesHelper2(byte[] data, out int length, JsonCommentHandling commentHandling = JsonCommentHandling.Default)
+        {
+            var state = new JsonReaderState2(commentHandling: commentHandling);
+            var reader = new TestReader(data, true, state);
+            return JsonLabReaderLoop(data.Length, out length, ref reader);
+        }
+
+        public static byte[] JsonLabReaderLoop(int inpuDataLength, out int length, ref TestReader json)
+        {
+            byte[] outputArray = new byte[inpuDataLength];
+            Span<byte> destination = outputArray;
+
+            while (json.Read())
+            {
+                JsonTokenType tokenType = json.TokenType;
+                ReadOnlySpan<byte> valueSpan = json.IsValueMultiSegment ? json.ValueSequence.ToArray() : json.ValueSpan;
+                switch (tokenType)
+                {
+                    case JsonTokenType.PropertyName:
+                        valueSpan.CopyTo(destination);
+                        destination[valueSpan.Length] = (byte)',';
+                        destination[valueSpan.Length + 1] = (byte)' ';
+                        destination = destination.Slice(valueSpan.Length + 2);
+                        break;
+                    case JsonTokenType.Number:
+                    case JsonTokenType.String:
+                    case JsonTokenType.Comment:
+                        valueSpan.CopyTo(destination);
+                        destination[valueSpan.Length] = (byte)',';
+                        destination[valueSpan.Length + 1] = (byte)' ';
+                        destination = destination.Slice(valueSpan.Length + 2);
+                        break;
+                    case JsonTokenType.True:
+                        // Special casing True/False so that the casing matches with Json.NET
+                        destination[0] = (byte)'T';
+                        destination[1] = (byte)'r';
+                        destination[2] = (byte)'u';
+                        destination[3] = (byte)'e';
+                        destination[valueSpan.Length] = (byte)',';
+                        destination[valueSpan.Length + 1] = (byte)' ';
+                        destination = destination.Slice(valueSpan.Length + 2);
+                        break;
+                    case JsonTokenType.False:
+                        destination[0] = (byte)'F';
+                        destination[1] = (byte)'a';
+                        destination[2] = (byte)'l';
+                        destination[3] = (byte)'s';
+                        destination[4] = (byte)'e';
+                        destination[valueSpan.Length] = (byte)',';
+                        destination[valueSpan.Length + 1] = (byte)' ';
+                        destination = destination.Slice(valueSpan.Length + 2);
+                        break;
+                    case JsonTokenType.Null:
+                        // Special casing Null so that it matches what JSON.NET does
+                        break;
+                    default:
+                        break;
+                }
+            }
+            length = outputArray.Length - destination.Length;
+            return outputArray;
+        }
+
         public static byte[] JsonLabReturnBytesHelper(byte[] data, out int length, JsonReaderOptions options = default)
         {
             var reader = new JsonUtf8Reader(data)
