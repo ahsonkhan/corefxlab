@@ -2,17 +2,27 @@
   <Import Project="..\..\tools\common.props" />
   <PropertyGroup>
     <Description>Non-allocating JSON reader and writer</Description>
-    <TargetFramework>netstandard1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageTags>.NET json non-allocating corefxlab</PackageTags>
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Update="ExceptionStrings.Designer.cs">
+    <Compile Update="ExceptionStrings - Copy.Designer.cs">
+      <DependentUpon>ExceptionStrings.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
+    <Compile Update="ExceptionStrings - Copy.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>ExceptionStrings.resx</DependentUpon>
+    </Compile>
+    <Compile Update="ExceptionStrings2.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ExceptionStrings2.resx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -21,11 +31,16 @@
   <ItemGroup>
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.ValueTuple" Version="$(CoreFxStableVersion)" />
+    <PackageReference Include="System.Collections.Specialized" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Update="ExceptionStrings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>ExceptionStrings.Designer.cs</LastGenOutput>
+      <LastGenOutput>ExceptionStrings - Copy.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="ExceptionStrings2.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ExceptionStrings2.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

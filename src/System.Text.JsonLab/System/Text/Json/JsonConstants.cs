@@ -34,6 +34,7 @@ namespace System.Text.JsonLab
         public const byte Solidus = (byte)'/';
         public const byte BackSpace = (byte)'\b';
         public const byte FormFeed = (byte)'\f';
+        public const byte Asterisk = (byte)'*';
 
         #endregion Control characters
 

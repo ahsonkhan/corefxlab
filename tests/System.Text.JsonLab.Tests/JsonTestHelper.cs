@@ -1255,7 +1255,7 @@ namespace System.Text.JsonLab.Tests
 
         public static byte[] JsonLabReturnBytesHelper2(byte[] data, out int length, JsonCommentHandling commentHandling = JsonCommentHandling.Default)
         {
-            var state = new JsonReaderState2(commentHandling: commentHandling);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = commentHandling });
             var reader = new TestReader(data, true, state);
             return JsonLabReaderLoop(data.Length, out length, ref reader);
         }

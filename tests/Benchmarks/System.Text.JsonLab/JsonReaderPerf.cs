@@ -14,27 +14,27 @@ namespace System.Text.JsonLab.Benchmarks
 {
     // Since there are 240 tests here (8 * 2 * 15), setting low values for the warmupCount and targetCount
     //[DisassemblyDiagnoser(printPrologAndEpilog: true, recursiveDepth: 2)]
-    //[SimpleJob(warmupCount: 3, targetCount: 5)]
-    //[MemoryDiagnoser]
+    [SimpleJob(warmupCount: 3, targetCount: 5)]
+    [MemoryDiagnoser]
     public class JsonReaderPerf
     {
         // Keep the JsonStrings resource names in sync with TestCaseType enum values.
         public enum TestCaseType
         {
             HelloWorld,
-            BasicJson,
+            //BasicJson,
             //BasicLargeNum,
             //SpecialNumForm,
             //ProjectLockJson,
             //FullSchema1,
             //FullSchema2,
-            //DeepTree,
+            DeepTree,
             //BroadTree,
             //LotsOfNumbers,
             //LotsOfStrings,
-            Json400B,
-            Json4KB,
-            Json40KB,
+            //Json400B,
+            //Json4KB,
+            //Json40KB,
             Json400KB
         }
 
@@ -124,7 +124,7 @@ namespace System.Text.JsonLab.Benchmarks
         [Benchmark]
         public void CorefxJsonReader()
         {
-            var json = new TestReader(_dataUtf8, true, default);
+            var json = new TestReader(_dataUtf8, true, new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments }));
             while (json.Read()) ;
         }
 
@@ -137,13 +137,14 @@ namespace System.Text.JsonLab.Benchmarks
         //[Benchmark]
         public void TestReaderCtor()
         {
-            var json = new TestReader(_dataUtf8, true, default);
+            var json = new TestReader(_dataUtf8, true, new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.Default }));
         }
 
         //[Benchmark]
         public JsonReaderState2 ReaderStateCtor()
         {
-            return new JsonReaderState2(64, JsonCommentHandling.Default);
+            return default;
+            //return new JsonReaderState2(64, JsonCommentHandling.Default);
         }
 
         //[Benchmark]

@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Collections.Specialized;
+using System.Collections;
 
 namespace System.Text.JsonLab
 {
@@ -59,23 +61,17 @@ namespace System.Text.JsonLab
         // depths up to 64 (which is the default max depth).
         internal ulong _stackFreeContainer;
         internal long _lineNumber;
-        internal long _lineBytePosition;
+        internal long _bytePositionInLine;
         internal long _bytesConsumed;
         internal int _currentDepth;
         internal int _maxDepth;
         internal bool _inObject;
         internal bool _isNotPrimitive;
         internal JsonTokenType _tokenType;
+        internal JsonTokenType _previousTokenType;
         internal JsonReaderOptions2 _readerOptions;
-        internal Stack<JsonTokenType> _stack;
-        internal SequencePosition _sequencePosition;
-
-        /// <summary>
-        /// Returns the current <see cref="SequencePosition"/> within the provided UTF-8 encoded
-        /// input ReadOnlySequence&lt;byte&gt;. If the <see cref="JsonUtf8Reader"/> was constructed
-        /// with a ReadOnlySpan&lt;byte&gt; instead, this will always return a default <see cref="SequencePosition"/>.
-        /// </summary>
-        public SequencePosition Position => _sequencePosition;
+        internal CustomUncheckedBitArray _stack;
+        //internal Stack<JsonTokenType> _stack;
 
         /// <summary>
         /// Returns the total amount of bytes consumed by the <see cref="JsonUtf8Reader"/> so far
@@ -100,30 +96,24 @@ namespace System.Text.JsonLab
         /// in more data asynchronously before continuing with a new instance of the <see cref="JsonUtf8Reader"/>.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public JsonReaderState2(int maxDepth = 64, JsonCommentHandling commentHandling = JsonCommentHandling.Default)
+        public JsonReaderState2(int maxDepth = 64, JsonReaderOptions2 options = default)
         {
             if (maxDepth <= 0)
-                throw new ArgumentException("blah");
+                throw JsonThrowHelper.GetArgumentException_MaxDepthMustBePositive();
 
             _stackFreeContainer = default;
             _lineNumber = default;
-            _lineBytePosition = default;
+            _bytePositionInLine = default;
             _bytesConsumed = default;
             _currentDepth = default;
             _maxDepth = maxDepth;
             _inObject = default;
             _isNotPrimitive = default;
             _tokenType = default;
-            _readerOptions = new JsonReaderOptions2 { CommentHandling = commentHandling };
-            _sequencePosition = default;
-
-            // Only allocate the stack if the user explicitly sets the JsonReaderOptions
-            // by providing a custom JsonCommentHandling OR if the user explicitly sets the
-            // max depth to be larger than 64. This way we avoid allocations in the common, default cases.
-            if (commentHandling == JsonCommentHandling.AllowComments || maxDepth > 1)
-                _stack = new Stack<JsonTokenType>();
-            else
-                _stack = null;
+            _previousTokenType = default;
+            _readerOptions = options;
+            _stack = default; // new CustomUncheckedBitArray(2); // 64-bits
+            //_stack = null;
         }
         /// <summary>
         /// Gets the custom behaviour when reading JSON using

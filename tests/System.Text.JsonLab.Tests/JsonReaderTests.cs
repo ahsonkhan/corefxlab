@@ -131,7 +131,7 @@ namespace System.Text.JsonLab.Tests
                     string jsonStr = WriteDepthWithArray(i, commentHandling == JsonCommentHandling.AllowComments);
                     Span<byte> data = Encoding.UTF8.GetBytes(jsonStr);
 
-                    var state = new JsonReaderState2(maxDepth: depth + 1, commentHandling: commentHandling);
+                    var state = new JsonReaderState2(maxDepth: depth + 1, options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                     var json = new TestReader(data, isFinalBlock: true, state);
 
                     int actualDepth = 0;
@@ -189,7 +189,7 @@ namespace System.Text.JsonLab.Tests
             }
             Assert.Equal(expectedWithComments, builder.ToString());
 
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.AllowComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments });
             var json = new TestReader(data, isFinalBlock: true, state);
 
             builder = new StringBuilder();
@@ -201,7 +201,7 @@ namespace System.Text.JsonLab.Tests
 
             Assert.Equal(expectedWithComments, builder.ToString());
 
-            state = new JsonReaderState2(commentHandling: JsonCommentHandling.SkipComments);
+            state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.SkipComments });
             json = new TestReader(data, isFinalBlock: true, state);
 
             builder = new StringBuilder();
@@ -304,6 +304,11 @@ namespace System.Text.JsonLab.Tests
 
             for (int i = 0; i < dataUtf8.Length; i++)
             {
+                if (i == 209)
+                {
+                    var t1 = 0;
+                }
+
                 JsonReaderState2 state = default;
                 var json = new TestReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
                 byte[] output = JsonTestHelper.JsonLabReaderLoop(outputSpan.Length, out int firstLength, ref json);
@@ -312,13 +317,12 @@ namespace System.Text.JsonLab.Tests
 
                 long consumed = json.BytesConsumed;
                 Assert.Equal(consumed, json.CurrentState.BytesConsumed);
-                JsonReaderState2 jsonState = json.CurrentState;
 
                 // Skipping large JSON since slicing them (O(n^3)) is too slow.
                 if (type == TestCaseType.DeepTree || type == TestCaseType.BroadTree || type == TestCaseType.LotsOfNumbers
                     || type == TestCaseType.LotsOfStrings || type == TestCaseType.Json4KB)
                 {
-                    json = new TestReader(dataUtf8.AsSpan((int)consumed), isFinalBlock: true, jsonState);
+                    json = new TestReader(dataUtf8.AsSpan((int)consumed), isFinalBlock: true, json.CurrentState);
                     output = JsonTestHelper.JsonLabReaderLoop(outputSpan.Length - written, out int length, ref json);
                     output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
                     written += length;
@@ -333,9 +337,24 @@ namespace System.Text.JsonLab.Tests
                 {
                     for (long j = consumed; j < dataUtf8.Length - consumed; j++)
                     {
+                        // Need to re-initialize the state and reader to avoid using the previous state stack.
+                        state = default;
+                        json = new TestReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
+                        while (json.Read())
+                            ;
+                        JsonReaderState2 jsonState = json.CurrentState;
+
                         written = firstLength;
                         json = new TestReader(dataUtf8.AsSpan((int)consumed, (int)j), isFinalBlock: false, jsonState);
-                        output = JsonTestHelper.JsonLabReaderLoop(outputSpan.Length - written, out int length, ref json);
+                        int length = 0;
+                        try
+                        {
+                            output = JsonTestHelper.JsonLabReaderLoop(outputSpan.Length - written, out length, ref json);
+                        }
+                        catch (JsonReaderException ex)
+                        {
+                            var temp = 0;
+                        }
                         output.AsSpan(0, length).CopyTo(outputSpan.Slice(written));
                         written += length;
 
@@ -366,7 +385,7 @@ namespace System.Text.JsonLab.Tests
             {
                 for (int i = 0; i < dataUtf8.Length; i++)
                 {
-                    var state = new JsonReaderState2(commentHandling: commentHandling);
+                    var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                     var json = new TestReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
                     while (json.Read())
                         ;
@@ -375,7 +394,7 @@ namespace System.Text.JsonLab.Tests
                     Assert.Equal(consumed, json.CurrentState.BytesConsumed);
                     for (long j = consumed; j < dataUtf8.Length - consumed; j++)
                     {
-                        state = new JsonReaderState2(commentHandling: commentHandling);
+                        state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                         json = new TestReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, state);
                         while (json.Read())
                             ;
@@ -462,7 +481,7 @@ namespace System.Text.JsonLab.Tests
             {
                 for (int i = 0; i < dataUtf8.Length; i++)
                 {
-                    var state = new JsonReaderState2(commentHandling: commentHandling);
+                    var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                     var json = new TestReader(dataUtf8.AsSpan(0, i), false, state);
                     while (json.Read())
                         ;
@@ -501,7 +520,7 @@ namespace System.Text.JsonLab.Tests
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {
-                var state = new JsonReaderState2(commentHandling: commentHandling);
+                var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                 var json = new TestReader(dataUtf8.AsSpan(0, splitLocation), false, state);
                 while (json.Read())
                     ;
@@ -529,7 +548,7 @@ namespace System.Text.JsonLab.Tests
         {
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {
-                var state = new JsonReaderState2(commentHandling: commentHandling);
+                var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                 byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
                 var json = new TestReader(dataUtf8.AsSpan(0, splitLocation), false, state);
                 while (json.Read())
@@ -586,7 +605,7 @@ namespace System.Text.JsonLab.Tests
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {
-                var state = new JsonReaderState2(maxDepth: maxDepth, commentHandling: commentHandling);
+                var state = new JsonReaderState2(maxDepth: maxDepth, options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                 var json = new TestReader(dataUtf8, false, state);
 
                 try
@@ -613,7 +632,7 @@ namespace System.Text.JsonLab.Tests
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {
-                var state = new JsonReaderState2(commentHandling: commentHandling);
+                var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                 var json = new TestReader(dataUtf8, false, state);
 
                 try
@@ -708,7 +727,7 @@ namespace System.Text.JsonLab.Tests
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {
-                var state = new JsonReaderState2(maxDepth: maxDepth, commentHandling: commentHandling);
+                var state = new JsonReaderState2(maxDepth: maxDepth, options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                 var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
                 try
@@ -791,7 +810,7 @@ namespace System.Text.JsonLab.Tests
 
             foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
             {
-                var state = new JsonReaderState2(maxDepth: maxDepth, commentHandling: commentHandling);
+                var state = new JsonReaderState2(maxDepth: maxDepth, options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                 var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
                 try
@@ -814,7 +833,7 @@ namespace System.Text.JsonLab.Tests
                     }
                     try
                     {
-                        var stateInner = new JsonReaderState2(maxDepth: maxDepth, commentHandling: commentHandling);
+                        var stateInner = new JsonReaderState2(maxDepth: maxDepth, options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                         var jsonSlice = new TestReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, stateInner);
                         while (jsonSlice.Read())
                             ;
@@ -856,7 +875,7 @@ namespace System.Text.JsonLab.Tests
             string jsonString = builder.ToString();
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.SkipComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.SkipComments });
             var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
             if (json.Read())
@@ -868,7 +887,7 @@ namespace System.Text.JsonLab.Tests
             Assert.False(json.Read());
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
 
-            /*state = new JsonReaderState2(commentHandling: JsonCommentHandling.AllowComments);
+            state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments });
             json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
             bool foundNumber = false;
@@ -882,7 +901,7 @@ namespace System.Text.JsonLab.Tests
                 }
             }
             Assert.True(foundNumber);
-            Assert.Equal(dataUtf8.Length, json.BytesConsumed);*/
+            Assert.Equal(dataUtf8.Length, json.BytesConsumed);
         }
 
         public static string WriteDepth(int depth, bool writeComment = false)
@@ -934,7 +953,7 @@ namespace System.Text.JsonLab.Tests
                     string jsonStr = WriteDepth(i, commentHandling == JsonCommentHandling.AllowComments);
                     Span<byte> data = Encoding.UTF8.GetBytes(jsonStr);
 
-                    var state = new JsonReaderState2(maxDepth: depth, commentHandling: commentHandling);
+                    var state = new JsonReaderState2(maxDepth: depth, options: new JsonReaderOptions2 { CommentHandling = commentHandling });
                     var json = new TestReader(data, isFinalBlock: true, state);
 
                     int actualDepth = 0;
@@ -1002,7 +1021,7 @@ namespace System.Text.JsonLab.Tests
         public static void AllowComments(string jsonString, string expectedComment, int expectedIndex)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.AllowComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments });
             var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
             bool foundComment = false;
@@ -1062,10 +1081,14 @@ namespace System.Text.JsonLab.Tests
         [InlineData("\"d漢字elta\" \r\n/*This is a split multi-line \n漢字comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", "This is a split multi-line \n漢字comment after json", 72)]
         [InlineData("{\"a漢字ge\" : \n/*This is a split multi-line \n漢字comment between key-value pairs*/ 30}", "This is a split multi-line \n漢字comment between key-value pairs", 85)]
         [InlineData("{\"a漢字ge\" : 30/*This is a split multi-line \n漢字comment between key-value pairs on the same line*/}", "This is a split multi-line \n漢字comment between key-value pairs on the same line", 103)]
+
+        [InlineData("{\r\n   \"value\": 11,\r\n   /* yes, it's mis-spelled */\r\n   \"deelay\": 3\r\n}", " yes, it's mis-spelled ", 50)]
+        [InlineData("[\r\n   12,\r\n   87,\r\n   /* Isn't it \"nice\" that JSON provides no limits on the length of numbers? */\r\n   123456789012345678901234567890123456789.01234567890123456789e+9876543218976543219876543210\r\n]",
+            " Isn't it \"nice\" that JSON provides no limits on the length of numbers? ", 98)]
         public static void AllowCommentsSingleSegment(string jsonString, string expectedComment, int expectedIndex)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.AllowComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments });
             var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
             bool foundComment = false;
@@ -1092,7 +1115,7 @@ namespace System.Text.JsonLab.Tests
 
             for (int i = 0; i < dataUtf8.Length; i++)
             {
-                var stateInner = new JsonReaderState2(commentHandling: JsonCommentHandling.AllowComments);
+                var stateInner = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments });
                 var jsonSlice = new TestReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, stateInner);
 
                 foundComment = false;
@@ -1187,7 +1210,7 @@ namespace System.Text.JsonLab.Tests
         public static void SkipComments(string jsonString, int expectedConsumed)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.SkipComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.SkipComments });
             var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
             JsonTokenType prevTokenType = JsonTokenType.None;
@@ -1241,13 +1264,15 @@ namespace System.Text.JsonLab.Tests
         [InlineData("\"d漢字elta\" \r\n/*This is a split multi-line \n漢字comment after json*///Here is another comment\n/*and a multi-line comment*///Another single-line comment\n\t  /*blah * blah*/", 60)]
         [InlineData("{\"a漢字ge\" : \n/*This is a split multi-line \n漢字comment between key-value pairs*/ 30}", 73)]
         [InlineData("{\"a漢字ge\" : 30/*This is a split multi-line \n漢字comment between key-value pairs on the same line*/}", 91)]
+
+        [InlineData("{\r\n   \"value\": 11,\r\n   /* yes, it's mis-spelled */\r\n   \"deelay\": 3\r\n}", 91)]
+        [InlineData("[\r\n   12,\r\n   87,\r\n   /* Isn't it \"nice\" that JSON provides no limits on the length of numbers? */\r\n   123456789012345678901234567890123456789.01234567890123456789e+9876543218976543219876543210\r\n]", 98)]
         public static void SkipCommentsSingleSegment(string jsonString, int expectedConsumed)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.SkipComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.SkipComments });
             var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
-            JsonTokenType prevTokenType = JsonTokenType.None;
             while (json.Read())
             {
                 JsonTokenType tokenType = json.TokenType;
@@ -1257,18 +1282,15 @@ namespace System.Text.JsonLab.Tests
                         Assert.True(false, "TokenType should never be Comment when we are skipping them.");
                         break;
                 }
-                Assert.NotEqual(tokenType, prevTokenType);
-                prevTokenType = tokenType;
             }
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
             Assert.Equal(dataUtf8.Length, json.CurrentState.BytesConsumed);
 
             for (int i = 0; i < dataUtf8.Length; i++)
             {
-                var stateInner = new JsonReaderState2(commentHandling: JsonCommentHandling.SkipComments);
+                var stateInner = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.SkipComments });
                 var jsonSlice = new TestReader(dataUtf8.AsSpan(0, i), isFinalBlock: false, stateInner);
 
-                prevTokenType = JsonTokenType.None;
                 while (jsonSlice.Read())
                 {
                     JsonTokenType tokenType = jsonSlice.TokenType;
@@ -1278,8 +1300,6 @@ namespace System.Text.JsonLab.Tests
                             Assert.True(false, "TokenType should never be Comment when we are skipping them.");
                             break;
                     }
-                    Assert.NotEqual(tokenType, prevTokenType);
-                    prevTokenType = tokenType;
                 }
 
                 int prevConsumed = (int)jsonSlice.BytesConsumed;
@@ -1295,8 +1315,6 @@ namespace System.Text.JsonLab.Tests
                             Assert.True(false, "TokenType should never be Comment when we are skipping them.");
                             break;
                     }
-                    Assert.NotEqual(tokenType, prevTokenType);
-                    prevTokenType = tokenType;
                 }
 
                 Assert.Equal(dataUtf8.Length - prevConsumed, jsonSlice.BytesConsumed);
@@ -1520,7 +1538,7 @@ namespace System.Text.JsonLab.Tests
         {
             expectedlineNumber -= 1;
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.AllowComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments });
             var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
             try
@@ -1592,7 +1610,7 @@ namespace System.Text.JsonLab.Tests
         {
             expectedlineNumber -= 1;
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
-            var state = new JsonReaderState2(commentHandling: JsonCommentHandling.AllowComments);
+            var state = new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments });
             var json = new TestReader(dataUtf8, isFinalBlock: true, state);
 
             try
