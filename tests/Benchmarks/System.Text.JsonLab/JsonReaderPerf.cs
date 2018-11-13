@@ -14,7 +14,7 @@ namespace System.Text.JsonLab.Benchmarks
 {
     // Since there are 240 tests here (8 * 2 * 15), setting low values for the warmupCount and targetCount
     //[DisassemblyDiagnoser(printPrologAndEpilog: true, recursiveDepth: 2)]
-    [SimpleJob(warmupCount: 3, targetCount: 5)]
+    //[SimpleJob(warmupCount: 3, targetCount: 5)]
     [MemoryDiagnoser]
     public class JsonReaderPerf
     {
@@ -28,14 +28,14 @@ namespace System.Text.JsonLab.Benchmarks
             //ProjectLockJson,
             //FullSchema1,
             //FullSchema2,
-            DeepTree,
+            //DeepTree,
             //BroadTree,
             //LotsOfNumbers,
             //LotsOfStrings,
             //Json400B,
             //Json4KB,
             //Json40KB,
-            Json400KB
+            //Json400KB
         }
 
         private string _jsonString;
@@ -57,6 +57,22 @@ namespace System.Text.JsonLab.Benchmarks
         public void Setup()
         {
             _jsonString = JsonStrings.ResourceManager.GetString(TestCase.ToString());
+
+            var sb = new StringBuilder();
+
+            sb.Append("{");
+            for (int i = 0; i < 128; i++)
+            {
+                sb.Append("\"message" + i + "\": ").Append("{");
+            }
+
+            for (int i = 0; i < 128; i++)
+            {
+                sb.Append("}");
+            }
+            sb.Append("}");
+
+            _jsonString = sb.ToString();
 
             // Remove all formatting/indendation
             if (IsDataCompact)
@@ -117,16 +133,43 @@ namespace System.Text.JsonLab.Benchmarks
         //[Benchmark(Baseline = true)]
         public void ReaderSystemTextJsonLabSpanEmptyLoop()
         {
-            var json = new JsonUtf8Reader(_dataUtf8);
+            var json = new JsonUtf8Reader(_dataUtf8)
+            {
+                MaxDepth = 1_024
+            };
             while (json.Read()) ;
         }
 
         [Benchmark]
+        public void CorefxJsonReaderAllow()
+        {
+            var state = new Json.Corefx.JsonReaderState(maxDepth: 1_024, options: new Json.Corefx.JsonReaderOptions { CommentHandling = Json.Corefx.JsonCommentHandling.Allow });
+            var json = new Json.Corefx.Utf8JsonReader(_dataUtf8, true, state);
+            while (json.Read()) ;
+        }
+
+        [Benchmark]
+        public void CorefxJsonReaderSkip()
+        {
+            var state = new Json.Corefx.JsonReaderState(maxDepth: 1_024, options: new Json.Corefx.JsonReaderOptions { CommentHandling = Json.Corefx.JsonCommentHandling.Skip });
+            var json = new Json.Corefx.Utf8JsonReader(_dataUtf8, true, state);
+            while (json.Read()) ;
+        }
+
+        [Benchmark(Baseline = true)]
+        public void CorefxJsonReaderDefault()
+        {
+            var state = new Json.Corefx.JsonReaderState(maxDepth: 1_024, options: new Json.Corefx.JsonReaderOptions { CommentHandling = Json.Corefx.JsonCommentHandling.Disallow });
+            var json = new Json.Corefx.Utf8JsonReader(_dataUtf8, true, state);
+            while (json.Read()) ;
+        }
+
+        /*[Benchmark]
         public void CorefxJsonReader()
         {
             var json = new TestReader(_dataUtf8, true, new JsonReaderState2(options: new JsonReaderOptions2 { CommentHandling = JsonCommentHandling.AllowComments }));
             while (json.Read()) ;
-        }
+        }*/
 
         //[Benchmark]
         public void JsonUtf8ReaderCtor()
