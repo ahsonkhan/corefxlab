@@ -6,7 +6,6 @@ using BenchmarkDotNet.Attributes;
 
 namespace System.Text.JsonLab.Benchmarks
 {
-
     [MemoryDiagnoser]
     public class JsonReaderCustomPerf
     {
@@ -89,6 +88,14 @@ namespace System.Text.JsonLab.Benchmarks
         {
             var state = new Json.Corefx.JsonReaderStateCustom(maxDepth: 1_024, options: new Json.Corefx.JsonReaderOptions { CommentHandling = Json.Corefx.JsonCommentHandling.Disallow });
             var json = new Json.Corefx.Utf8JsonReaderCustom(_dataUtf8, true, state);
+            while (json.Read()) ;
+        }
+
+        [Benchmark]
+        public void CorefxJsonReaderStackDefault()
+        {
+            var state = new Json.Corefx.JsonReaderStateMaster(maxDepth: 1_024, options: new Json.Corefx.JsonReaderOptions { CommentHandling = Json.Corefx.JsonCommentHandling.Disallow });
+            var json = new Json.Corefx.Utf8JsonReaderMaster(_dataUtf8, true, state);
             while (json.Read()) ;
         }
 

@@ -51,6 +51,23 @@ namespace System.Text.Json.Corefx
             throw GetJsonReaderException(ref json, resource, nextByte, bytes);
         }
 
+        public static void ThrowJsonReaderException(ref Utf8JsonReaderMaster json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
+        {
+            throw GetJsonReaderException(ref json, resource, nextByte, bytes);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static JsonReaderException GetJsonReaderException(ref Utf8JsonReaderMaster json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
+        {
+            string message = "";
+
+            long lineNumber = json.CurrentState._lineNumber;
+            long bytePositionInLine = json.CurrentState._bytePositionInLine;
+
+            message += $" LineNumber: {lineNumber} | BytePositionInLine: {bytePositionInLine}.";
+            return new JsonReaderException(message, lineNumber, bytePositionInLine);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static JsonReaderException GetJsonReaderException(ref Utf8JsonReaderCustom json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
         {

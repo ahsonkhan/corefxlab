@@ -72,15 +72,20 @@ namespace System.Text.Json.Corefx
         private void Grow(int index)
         {
             Debug.Assert(index >= Length, $"index: {index}, Length: {Length}");
-            int newints = ((index - 1) >> 5) + 1;   // (value + 31) / 32 without overflow
 
-            // If index is a multiple of 32
-            if ((index & 31) == 0)
+            // If index is a multiple of 32, add 1.
+            int newints = (index & 31) == 0 ? 1 : 0;
+
+            if ((uint)index / 2 < int.MaxValue)
             {
-                newints++;
+                index *= 2; // Grow by doubling, if possible.
+            }
+            else
+            {
+                index++;
             }
 
-            index++;
+            newints += ((index - 1) >> 5) + 1;   // (value + 31) / 32 without overflow
 
             if (newints > _array.Length)
             {
