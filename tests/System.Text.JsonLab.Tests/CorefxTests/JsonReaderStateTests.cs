@@ -2,12 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Text.Json.Corefx.Tests
 {
     public static partial class JsonReaderStateTests
     {
+        [Fact]
+        public static void SizeComparison()
+        {
+            Assert.Equal(Unsafe.SizeOf<JsonReaderState>(), Unsafe.SizeOf<JsonReaderStateMaster>());
+            Assert.Equal(Unsafe.SizeOf<JsonReaderStateCustom>(), Unsafe.SizeOf<JsonReaderStateMaster>());
+            Assert.Equal(Unsafe.SizeOf<JsonReaderStateCustom>(), Unsafe.SizeOf<JsonReaderState>());
+        }
+
         [Fact]
         public static void DefaultJsonReaderState()
         {
