@@ -11,10 +11,10 @@ using System.Text.Utf8;
 
 namespace System.Text.JsonLab
 {
-    public ref struct JsonObject
+    public struct JsonObject
     {
         private CustomDb _database;
-        private ReadOnlySpan<byte> _jsonData;
+        private ReadOnlyMemory<byte> _jsonData;
 
         public string PrintDatabase() => _database.PrintDatabase();
 
@@ -27,7 +27,7 @@ namespace System.Text.JsonLab
                 // Special casing Null so that it matches what JSON.NET does
                 if (record.IsSimpleValue && record.JsonType != JsonType.Null)
                 {
-                    ReadOnlySpan<byte> value = _jsonData.Slice(record.Location, record.SizeOrLength);
+                    ReadOnlySpan<byte> value = _jsonData.Span.Slice(record.Location, record.SizeOrLength);
                     sb.Append(Encoding.UTF8.GetString(value.ToArray(), 0, value.Length)).Append(", ");
                 }
             }
@@ -41,6 +41,13 @@ namespace System.Text.JsonLab
         }
 
         internal JsonObject(ReadOnlySpan<byte> jsonData, CustomDb database, ReadOnlySpan<byte> name = default)
+        {
+            _database = database;
+            _jsonData = jsonData.ToArray();
+            PropertyName = name.ToArray();
+        }
+
+        internal JsonObject(ReadOnlyMemory<byte> jsonData, CustomDb database, ReadOnlyMemory<byte> name = default)
         {
             _database = database;
             _jsonData = jsonData;
@@ -79,13 +86,13 @@ namespace System.Text.JsonLab
 
         public void Remove(JsonObject obj)
         {
-            ReadOnlySpan<byte> values = obj._jsonData;
+            ReadOnlySpan<byte> values = obj._jsonData.Span;
             CustomDb db = obj._database;
 
             DbRow objRecord = db.Get();
             int reduce = objRecord.SizeOrLength;
 
-            int idx = _database.Span.IndexOf(db.Span);
+            int idx = _database.Memory.Span.IndexOf(db.Memory.Span);
 
             int sliceVal = idx + db.Length;
 
@@ -116,7 +123,7 @@ namespace System.Text.JsonLab
             }
 
             _database.Slice(sliceVal).CopyTo(_database.Slice(idx));
-            _database.Span = _database.Slice(0, _database.Length - db.Length - DbRow.Size);
+            _database.Memory = _database.Memory.Slice(0, _database.Length - db.Length - DbRow.Size);
         }
 
         public bool TryGetValue(Utf8Span propertyName, out JsonObject value)
@@ -142,7 +149,7 @@ namespace System.Text.JsonLab
                 int startIndex = i + DbRow.Size;
                 DbRow nextRecord = _database.Get(startIndex);
 
-                if (_jsonData.Slice(record.Location, record.SizeOrLength).SequenceEqual(propertyName.Bytes))
+                if (_jsonData.Span.Slice(record.Location, record.SizeOrLength).SequenceEqual(propertyName.Bytes))
                 {
                     int length = DbRow.Size;
                     if (!nextRecord.IsSimpleValue)
@@ -185,8 +192,8 @@ namespace System.Text.JsonLab
         private JsonObject CreateJsonObject(int startIndex, int length)
         {
             CustomDb copy = _database;
-            copy.Span = _database.Slice(startIndex, length);
-            ReadOnlySpan<byte> name = default;
+            copy.Memory = _database.Memory.Slice(startIndex, length);
+            ReadOnlyMemory<byte> name = default;
             if (startIndex >= DbRow.Size)
             {
                 DbRow row = GetRowDbIndex(startIndex - DbRow.Size);
@@ -267,7 +274,7 @@ namespace System.Text.JsonLab
                 JsonThrowHelper.ThrowInvalidCastException();
             }
 
-            return new Utf8Span(json._jsonData.Slice(record.Location, record.SizeOrLength));
+            return new Utf8Span(json._jsonData.Span.Slice(record.Location, record.SizeOrLength));
         }
 
         public static explicit operator Utf8String(JsonObject json)
@@ -278,7 +285,7 @@ namespace System.Text.JsonLab
                 JsonThrowHelper.ThrowInvalidCastException();
             }
 
-            return new Utf8String(json._jsonData.Slice(record.Location, record.SizeOrLength));
+            return new Utf8String(json._jsonData.Span.Slice(record.Location, record.SizeOrLength));
         }
 
         public static explicit operator bool(JsonObject json)
@@ -294,7 +301,7 @@ namespace System.Text.JsonLab
                 JsonThrowHelper.ThrowInvalidCastException();
             }
 
-            var slice = json._jsonData.Slice(record.Location);
+            var slice = json._jsonData.Span.Slice(record.Location);
 
             if (!Utf8Parser.TryParse(slice, out bool result, out _))
             {
@@ -311,7 +318,7 @@ namespace System.Text.JsonLab
                 JsonThrowHelper.ThrowInvalidCastException();
             }
 
-            var slice = json._jsonData.Slice(record.Location);
+            var slice = json._jsonData.Span.Slice(record.Location);
 
             if (!Utf8Parser.TryParse(slice, out int result, out _))
             {
@@ -330,12 +337,12 @@ namespace System.Text.JsonLab
 
             int count = record.Location;
             bool isNegative = false;
-            var nextByte = json._jsonData[count];
+            var nextByte = json._jsonData.Span[count];
             if (nextByte == '-')
             {
                 isNegative = true;
                 count++;
-                nextByte = json._jsonData[count];
+                nextByte = json._jsonData.Span[count];
             }
 
             if (nextByte < '0' || nextByte > '9' || count - record.Location >= record.SizeOrLength)
@@ -349,7 +356,7 @@ namespace System.Text.JsonLab
                 int digit = nextByte - '0';
                 integerPart = integerPart * 10 + digit;
                 count++;
-                nextByte = json._jsonData[count];
+                nextByte = json._jsonData.Span[count];
             }
 
             double result = integerPart;
@@ -359,13 +366,13 @@ namespace System.Text.JsonLab
             {
                 count++;
                 int numberOfDigits = count;
-                nextByte = json._jsonData[count];
+                nextByte = json._jsonData.Span[count];
                 while (nextByte >= '0' && nextByte <= '9' && count - record.Location < record.SizeOrLength)
                 {
                     int digit = nextByte - '0';
                     decimalPart = decimalPart * 10 + digit;
                     count++;
-                    nextByte = json._jsonData[count];
+                    nextByte = json._jsonData.Span[count];
                 }
                 numberOfDigits = count - numberOfDigits;
                 double divisor = Math.Pow(10, numberOfDigits);
@@ -377,7 +384,7 @@ namespace System.Text.JsonLab
             if (nextByte == 'e' || nextByte == 'E')
             {
                 count++;
-                nextByte = json._jsonData[count];
+                nextByte = json._jsonData.Span[count];
                 if (nextByte == '-' || nextByte == '+')
                 {
                     if (nextByte == '-')
@@ -386,13 +393,13 @@ namespace System.Text.JsonLab
                     }
                     count++;
                 }
-                nextByte = json._jsonData[count];
+                nextByte = json._jsonData.Span[count];
                 while (nextByte >= '0' && nextByte <= '9' && count - record.Location < record.Location)
                 {
                     int digit = nextByte - '0';
                     exponentPart = exponentPart * 10 + digit;
                     count++;
-                    nextByte = json._jsonData[count];
+                    nextByte = json._jsonData.Span[count];
                 }
 
                 result *= (Math.Pow(10, isExpNegative ? exponentPart * -1 : exponentPart));
@@ -421,7 +428,7 @@ namespace System.Text.JsonLab
             {
                 if (record.SizeOrLength != 4)
                     return true;
-                return (_jsonData[record.Location] != 'n' || _jsonData[record.Location + 1] != 'u' || _jsonData[record.Location + 2] != 'l' || _jsonData[record.Location + 3] != 'l');
+                return (_jsonData.Span[record.Location] != 'n' || _jsonData.Span[record.Location + 1] != 'u' || _jsonData.Span[record.Location + 2] != 'l' || _jsonData.Span[record.Location + 3] != 'l');
             }
         }
 
@@ -444,7 +451,7 @@ namespace System.Text.JsonLab
         {
             DbRow row = GetRow(index);
             if (row.IsSimpleValue)
-                return _jsonData.Slice(row.Location, row.SizeOrLength);
+                return _jsonData.Span.Slice(row.Location, row.SizeOrLength);
             return default; // Throw instead?
         }
 
@@ -452,14 +459,14 @@ namespace System.Text.JsonLab
         {
             DbRow row = GetRow();
             if (row.IsSimpleValue)
-                return _jsonData.Slice(row.Location, row.SizeOrLength);
+                return _jsonData.Span.Slice(row.Location, row.SizeOrLength);
             return default; // Throw instead?
         }
 
         internal ReadOnlySpan<byte> GetSpan(DbRow row)
         {
             Debug.Assert(row.IsSimpleValue);
-            return _jsonData.Slice(row.Location, row.SizeOrLength);
+            return _jsonData.Span.Slice(row.Location, row.SizeOrLength);
         }
 
         internal int Size
@@ -478,12 +485,12 @@ namespace System.Text.JsonLab
         public void Dispose()
         {
             _database.Dispose();
-            _jsonData = ReadOnlySpan<byte>.Empty;
+            _jsonData = ReadOnlyMemory<byte>.Empty;
         }
 
         public Enumerator GetEnumerator() => new Enumerator(this);
 
-        public ReadOnlySpan<byte> PropertyName { get; private set; }
+        public ReadOnlyMemory<byte> PropertyName { get; private set; }
 
         public ref struct Enumerator
         {

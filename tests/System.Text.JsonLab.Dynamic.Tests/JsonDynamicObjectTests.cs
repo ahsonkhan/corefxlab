@@ -93,6 +93,20 @@ namespace System.Text.JsonLab.Dynamic.Tests
         }
 
         [Fact]
+        public void FaceDetectResult()
+        {
+            string text = "[{\"faceId\":\"3a2754a5-0986-4d23-a381-a1ca1e0f4433\",\"faceRectangle\":{\"top\":109,\"left\":89,\"width\":139,\"height\":139},\"faceAttributes\":{\"smile\":0.0,\"headPose\":{\"pitch\":0.0,\"roll\":-0.9,\"yaw\":-1.0},\"gender\":\"male\",\"age\":55.0,\"facialHair\":{\"moustache\":0.1,\"beard\":0.6,\"sideburns\":0.1},\"glasses\":\"NoGlasses\",\"emotion\":{\"anger\":0.0,\"contempt\":0.0,\"disgust\":0.0,\"fear\":0.0,\"happiness\":0.0,\"neutral\":0.998,\"sadness\":0.002,\"surprise\":0.0},\"blur\":{\"blurLevel\":\"low\",\"value\":0.09},\"exposure\":{\"exposureLevel\":\"goodExposure\",\"value\":0.65},\"noise\":{\"noiseLevel\":\"high\",\"value\":0.86},\"makeup\":{\"eyeMakeup\":false,\"lipMakeup\":false},\"accessories\":[],\"occlusion\":{\"foreheadOccluded\":false,\"eyeOccluded\":false,\"mouthOccluded\":false},\"hair\":{\"bald\":0.02,\"invisible\":false,\"hairColor\":[{\"color\":\"gray\",\"confidence\":0.99},{\"color\":\"blond\",\"confidence\":0.97},{\"color\":\"brown\",\"confidence\":0.44},{\"color\":\"other\",\"confidence\":0.18},{\"color\":\"black\",\"confidence\":0.07},{\"color\":\"red\",\"confidence\":0.02}]}}}]";
+            var bytes = Encoding.UTF8.GetBytes(text);
+            dynamic json = JsonLazyDynamicObject.Parse(bytes);
+            var result = json[0];
+            var age = result.faceAttributes.age;
+            var gender = result.faceAttributes.gender;
+
+            Assert.Equal("male", gender);
+            Assert.Equal(55, age);
+        }
+
+        [Fact]
         public void DeserializeWithUtf8Strings()
         {
             string str = "{\"RememberMe\":true,\"Email\":\"name.familyname@not.com\",\"Password\":\"abcdefgh123456!@\"}";

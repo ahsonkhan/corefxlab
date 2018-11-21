@@ -10,12 +10,12 @@ namespace System.Text.JsonLab
     public class JsonLazyDynamicObject : DynamicObject, IDisposable
     {
         //TODO: no spans on the heap
-        JsonObject _dom => default;
+        JsonObject _dom;
 
         private JsonLazyDynamicObject(JsonObject dom)
         {
             //TODO: no spans on the heap
-            //_dom = dom;
+            _dom = dom;
         }
 
         public static JsonLazyDynamicObject Parse(ReadOnlySpan<byte> utf8Json)

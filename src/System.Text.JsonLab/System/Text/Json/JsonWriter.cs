@@ -112,11 +112,11 @@ namespace System.Text.JsonLab
                 if (valueRow.IsSimpleValue)
                 {
                     ReadOnlySpan<byte> value = child.GetSpan(valueRow);
-                    WriteAttribute(child.PropertyName, value, valueRow.JsonType == JsonType.String);
+                    WriteAttribute(child.PropertyName.ToArray(), value, valueRow.JsonType == JsonType.String);
                 }
                 else
                 {
-                    Write(child, child.PropertyName);
+                    Write(child, child.PropertyName.ToArray());
                 }
             }
             WriteObjectEnd();
