@@ -13,7 +13,7 @@ namespace System.Text.JsonLab.Benchmarks
 {
     //[Config(typeof(JustDisassembly))]
     //[SimpleJob(warmupCount: 3, targetCount: 5)]
-    [MemoryDiagnoser]
+    //[MemoryDiagnoser]
     //[DisassemblyDiagnoser(printPrologAndEpilog: true, recursiveDepth: 3)]
     public class JsonWriterPerf
     {
@@ -190,7 +190,7 @@ namespace System.Text.JsonLab.Benchmarks
             }
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void WriteNetCoreUtf8()
         {
             _memoryStream.Seek(0, SeekOrigin.Begin);
@@ -394,8 +394,9 @@ namespace System.Text.JsonLab.Benchmarks
             json.Flush();
         }
 
-        //[Benchmark]
-        public void WriterCoreNumbers()
+
+        [Benchmark]
+        public void WriterCoreNumbersUtf16()
         {
             _arrayFormatterWrapper.Clear();
 
@@ -414,6 +415,33 @@ namespace System.Text.JsonLab.Benchmarks
             json.WriteNumber("message", 12);
             json.WriteNumber("message", 1);
             json.WriteNumber("message", 1234567890);
+            json.WriteEndObject();
+
+            json.Flush();
+
+            //WriterSystemTextJsonHelloWorldUtf82(option, _arrayFormatterWrapper);
+        }
+
+        [Benchmark]
+        public void WriterCoreNumbersUtf8()
+        {
+            _arrayFormatterWrapper.Clear();
+
+            var state = new JsonWriterState(options: new JsonWriterOptions { Formatted = Formatted, SkipValidation = SkipValidation });
+
+            var json = new Utf8JsonWriter2<ArrayFormatterWrapper>(_arrayFormatterWrapper, state);
+
+            json.WriteStartObject();
+            json.WriteNumber(Message, 1234567);
+            json.WriteNumber(Message, 123456);
+            json.WriteNumber(Message, 12345);
+            json.WriteNumber(Message, 12345678);
+            json.WriteNumber(Message, 1234);
+            json.WriteNumber(Message, 123);
+            json.WriteNumber(Message, 123456789);
+            json.WriteNumber(Message, 12);
+            json.WriteNumber(Message, 1);
+            json.WriteNumber(Message, 1234567890);
             json.WriteEndObject();
 
             json.Flush();
@@ -509,7 +537,7 @@ namespace System.Text.JsonLab.Benchmarks
         }
 
         //[Benchmark]
-        public void WriterCoreNumbersUtf8()
+        public void WriterCoreNumbersUtf8_2()
         {
             _arrayFormatterWrapper.Clear();
 
