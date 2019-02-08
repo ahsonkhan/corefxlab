@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0">
+  <PropertyGroup>
+    <!-- Arcade dependencies -->
+    <SystemIOPipelinesPackageVersion>4.6.0-preview.19106.8</SystemIOPipelinesPackageVersion>
+  </PropertyGroup>
+</Project>

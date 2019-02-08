@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Dependencies>
+  <ProductDependencies></ProductDependencies>
+  <ToolsetDependencies>
+    <Dependency Name="System.IO.Pipelines" Version="4.6.0-preview.19106.8">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>4d180567e9dc5500006b58480184f0dcfe967c1e</Sha>
+    </Dependency>
+  </ToolsetDependencies>
+</Dependencies>
