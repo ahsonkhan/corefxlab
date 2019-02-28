@@ -14,6 +14,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- To copy BenchmarkDotNet.Diagnostics.Windows.dll -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!--<PackageConflictPreferredPackages>Microsoft.Private.CoreFx.NETCoreApp;runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp;$(PackageConflictPreferredPackages)</PackageConflictPreferredPackages>-->
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="BenchmarkDotNet.Artifacts\**" />
@@ -32,6 +33,7 @@
     <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="$(BenchmarkDotNetVersion)" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="2.0.30" />
     <PackageReference Include="System.Text.Encodings.Web" Version="$(CoreFxStableVersion)" />
+    <!--<PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-dev.19127.1" />-->
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
@@ -56,10 +58,16 @@
     <ProjectReference Include="..\..\src\System.Text.Encodings.Web.Utf8\System.Text.Encodings.Web.Utf8.csproj" />
     <ProjectReference Include="..\..\src\System.Text.Http\System.Text.Http.csproj" />
     <ProjectReference Include="..\..\src\System.Text.JsonLab\System.Text.JsonLab.csproj" />
+    <!--<ProjectReference Include="..\..\src\System.Text.JsonLab.Serialization\System.Text.JsonLab.Serialization.csproj" />-->
     <ProjectReference Include="..\..\src\System.Text.Utf8String\System.Text.Utf8String.csproj" />
     <ProjectReference Include="..\System.Binary.Base64.Tests\System.Binary.Base64.Tests.csproj" />
     <ProjectReference Include="..\System.Text.Primitives.Tests\System.Text.Primitives.Tests.csproj" />
     <ProjectReference Include="..\System.Buffers.ReaderWriter.Tests\System.Buffers.ReaderWriter.Tests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Text.Json">
+      <HintPath>..\..\..\..\dotnet_corefx\artifacts\bin\runtime\netcoreapp-Windows_NT-Release-x64\System.Text.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="JsonStrings.Designer.cs">

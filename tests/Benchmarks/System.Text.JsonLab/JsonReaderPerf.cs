@@ -20,25 +20,27 @@ namespace System.Text.JsonLab.Benchmarks
         // Keep the JsonStrings resource names in sync with TestCaseType enum values.
         public enum TestCaseType
         {
-            HelloWorld,
+            //HelloWorld,
             BasicJson,
-            BasicLargeNum,
-            SpecialNumForm,
-            ProjectLockJson,
-            FullSchema1,
-            FullSchema2,
-            DeepTree,
-            BroadTree,
-            LotsOfNumbers,
-            LotsOfStrings,
-            Json400B,
-            Json4KB,
-            Json40KB,
-            Json400KB
+            //BasicLargeNum,
+            //SpecialNumForm,
+            //ProjectLockJson,
+            //FullSchema1,
+            //FullSchema2,
+            //DeepTree,
+            //BroadTree,
+            //LotsOfNumbers,
+            //LotsOfStrings,
+            //Json400B,
+            //Json4KB,
+            //Json40KB,
+            //Json400KB
         }
 
         private string _jsonString;
         private byte[] _dataUtf8;
+        //private byte[] _dataUtf8Hello;
+        private byte[] _dataUtf8Basic;
         private ReadOnlySequence<byte> _sequence;
         private ReadOnlySequence<byte> _sequenceSingle;
         private MemoryStream _stream;
@@ -47,7 +49,7 @@ namespace System.Text.JsonLab.Benchmarks
         [ParamsSource(nameof(TestCaseValues))]
         public TestCaseType TestCase;
 
-        [Params(true, false)]
+        [Params(true)]
         public bool IsDataCompact;
 
         public static IEnumerable<TestCaseType> TestCaseValues() => (IEnumerable<TestCaseType>)Enum.GetValues(typeof(TestCaseType));
@@ -83,9 +85,12 @@ namespace System.Text.JsonLab.Benchmarks
 
             _stream = new MemoryStream(_dataUtf8);
             _reader = new StreamReader(_stream, Encoding.UTF8, false, 1024, true);
+
+            //_dataUtf8Hello = Encoding.UTF8.GetBytes(JsonStrings.ResourceManager.GetString(TestCaseType.HelloWorld.ToString()));
+            _dataUtf8Basic = Encoding.UTF8.GetBytes(JsonStrings.ResourceManager.GetString(TestCaseType.BasicJson.ToString()));
         }
 
-        [Benchmark(Baseline = true)]
+        //[Benchmark(Baseline = true)]
         public void ReaderNewtonsoftReaderEmptyLoop()
         {
             _stream.Seek(0, SeekOrigin.Begin);
@@ -94,7 +99,7 @@ namespace System.Text.JsonLab.Benchmarks
             while (json.Read()) ;
         }
 
-        [Benchmark]
+        //[Benchmark]
         public string ReaderNewtonsoftReaderReturnString()
         {
             _stream.Seek(0, SeekOrigin.Begin);
@@ -113,14 +118,27 @@ namespace System.Text.JsonLab.Benchmarks
             return sb.ToString();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void ReaderSystemTextJsonLabSpanEmptyLoop()
         {
             var json = new JsonUtf8Reader(_dataUtf8);
             while (json.Read()) ;
         }
 
+        //[Benchmark]
+        //public void DeserializeJsonHelloWorld()
+        //{
+        //    HelloWorld obj = Json.Serialization.JsonSerializer.Parse<HelloWorld>(_dataUtf8Hello);
+        //}
+
         [Benchmark]
+        public void DeserializeJsonBasicJson()
+        {
+            //BasicJson obj = Newtonsoft.Json.JsonConvert.DeserializeObject<BasicJson>(_jsonString);
+            BasicJson obj = Json.Serialization.JsonSerializer.Parse<BasicJson>(_dataUtf8Basic);
+        }
+
+        //[Benchmark]
         public void HeapableReaderSystemTextJsonLabSpanEmptyLoop()
         {
             var reader = new Utf8Json();
@@ -128,7 +146,7 @@ namespace System.Text.JsonLab.Benchmarks
             while (json.Read()) ;
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void ReaderSystemTextJsonLabStreamTypeEmptyLoop()
         {
             _stream.Seek(0, SeekOrigin.Begin);
@@ -137,21 +155,21 @@ namespace System.Text.JsonLab.Benchmarks
             json.Dispose();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void ReaderSystemTextJsonLabSingleSpanSequenceEmptyLoop()
         {
             var json = new JsonUtf8Reader(_sequenceSingle);
             while (json.Read()) ;
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void ReaderSystemTextJsonLabMultiSpanSequenceEmptyLoop()
         {
             var json = new JsonUtf8Reader(_sequence);
             while (json.Read()) ;
         }
 
-        [Benchmark]
+        //[Benchmark]
         public byte[] ReaderSystemTextJsonLabReturnBytes()
         {
             var outputArray = new byte[_dataUtf8.Length * 2];
@@ -207,7 +225,7 @@ namespace System.Text.JsonLab.Benchmarks
             return outputArray;
         }
 
-        [Benchmark]
+        //[Benchmark]
         public void ReaderUtf8JsonEmptyLoop()
         {
             var json = new global::Utf8Json.JsonReader(_dataUtf8);
@@ -218,7 +236,7 @@ namespace System.Text.JsonLab.Benchmarks
             }
         }
 
-        [Benchmark]
+        //[Benchmark]
         public byte[] ReaderUtf8JsonReturnBytes()
         {
             var json = new global::Utf8Json.JsonReader(_dataUtf8);
@@ -270,5 +288,26 @@ namespace System.Text.JsonLab.Benchmarks
             Next = segment;
             return segment;
         }
+    }
+
+    public class HelloWorld
+    {
+        string message { get; set; }
+    }
+
+    public class BasicJson
+    {
+        int age { get; set; }
+        string first { get; set; }
+        string last { get; set; }
+        List<string> phoneNumbers { get; set; }
+        Address address { get; set; }
+    }
+
+    public class Address
+    {
+        string street { get; set; }
+        string city { get; set; }
+        int zip { get; set; }
     }
 }
