@@ -70,6 +70,20 @@ namespace System.Text.JsonLab.Tests
             }
         }
 
+        [Fact]
+        public static void TestGetComment()
+        {
+            string jsonString = "// comment A\n[1]";
+            using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
+            {
+                jsonReader.Read();
+                //jsonReader.Read();
+                //jsonReader.Read();
+                //Assert.True(jsonReader.TokenType == JsonToken.Comment);
+                Assert.Equal("", jsonReader.Value.ToString());
+            }
+        }
+
         // TestCaseType is only used to give the json strings a descriptive name.
         [Theory]
         [MemberData(nameof(TestCases))]
